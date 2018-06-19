@@ -3,20 +3,28 @@ package main
 import "fmt"
 
 func main() {
-	var a = 1
-	var b int32
-	var c float32
-	var ptr *int
-	var balance = []float32{1000.0, 2.0, 3.4, 7.0, 50.0}
+	var countryCapitalMap map[string]string /*创建集合 */
+	countryCapitalMap = make(map[string]string)
 
-	/* 运算符实例 */
-	fmt.Printf("第 1 行 - a 变量类型为 = %T\n", a)
-	fmt.Printf("第 2 行 - b 变量类型为 = %T\n", b)
-	fmt.Printf("第 3 行 - c 变量类型为 = %T\n", c)
-	fmt.Print(balance)
+	/* map插入key - value对,各个国家对应的首都 */
+	countryCapitalMap["France"] = "Paris"
+	countryCapitalMap["Italy"] = "罗马"
+	countryCapitalMap["Japan"] = "东京"
+	countryCapitalMap["India "] = "新德里"
+	countryCapitalMap["USA"] = "华盛顿"
 
-	/*  & 和 * 运算符实例 */
-	ptr = &a /* 'ptr' 包含了 'a' 变量的地址 */
-	fmt.Printf("a 的值为  %d\n", a)
-	fmt.Printf("*ptr 为 %d\n", *ptr)
+	/*使用键输出地图值 */
+	// for country := range countryCapitalMap {
+	// fmt.Println(country, "首都是", countryCapitalMap[country])
+	// }
+
+	/*查看元素在集合中是否存在 */
+	captial, ok := countryCapitalMap["USA"] /*如果确定是真实的,则存在,否则不存在 */
+	fmt.Println(countryCapitalMap["USA"])
+	fmt.Println(ok)
+	if ok {
+		fmt.Println("美国的首都是", captial)
+	} else {
+		fmt.Println("美国的首都不存在")
+	}
 }
