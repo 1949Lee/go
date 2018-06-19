@@ -2,22 +2,21 @@ package main
 
 import "fmt"
 
-var x, y int
-var ( // 这种因式分解关键字的写法一般用于声明全局变量
-	a int
-	b bool
-)
-
-var c, d int = 1, 2
-var e, f = 123, "hello"
-
-//这种不带声明格式的只能在函数体中出现
-//g, h := 123, "hello"
-//g,h = 123,hello
-
 func main() {
-	a = 1
-	b = true
-	fmt.Println("Hello World")
-	fmt.Println("Hello World")
+	var a = 1
+	var b int32
+	var c float32
+	var ptr *int
+	var balance = []float32{1000.0, 2.0, 3.4, 7.0, 50.0}
+
+	/* 运算符实例 */
+	fmt.Printf("第 1 行 - a 变量类型为 = %T\n", a)
+	fmt.Printf("第 2 行 - b 变量类型为 = %T\n", b)
+	fmt.Printf("第 3 行 - c 变量类型为 = %T\n", c)
+	fmt.Print(balance)
+
+	/*  & 和 * 运算符实例 */
+	ptr = &a /* 'ptr' 包含了 'a' 变量的地址 */
+	fmt.Printf("a 的值为  %d\n", a)
+	fmt.Printf("*ptr 为 %d\n", *ptr)
 }
