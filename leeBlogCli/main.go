@@ -38,7 +38,7 @@ func main() {
 		// 	io.WriteString(w, fmt.Sprintf("<pre>%s</pre>", string(str)))
 		// }
 		str := ParseMarkDown("ink-blog-tool.md")
-		// html.EscapeString(string(str)) // 将HTML转换义方便存到数据库
+		html.EscapeString(string(str))                                                                                                                                                                                                                                                                                                                        // 将HTML转换义方便存到数据库
 		io.WriteString(w, fmt.Sprintf(`
 <!DOCTYPE html>
 <html lang="en">
@@ -49,7 +49,7 @@ func main() {
     <title>Document</title>
 </head>
 <body>
-<code>%s</code>
+%s
 </body>
 </html>
 		        `, html.UnescapeString(string(str)))) // 将HTML字符串反转义为HTML代码，渲染到网页
