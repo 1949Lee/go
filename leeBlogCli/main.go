@@ -86,6 +86,7 @@ func ParseMarkDown(fileName string) []byte {
 	// Split config and markdown
 	contentStr := string(data)
 	markdownStr := strings.SplitN(contentStr, "---", 2)
+	// 此步骤需要用自己的markdown语法解析器实现
 	out := blackfriday.Run([]byte(markdownStr[1]))
 	return out
 }
