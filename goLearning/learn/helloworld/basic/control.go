@@ -55,6 +55,5 @@ func main() {
 	//switch语句
 	fmt.Println(grade(0), grade(59), grade(70), grade(91), grade(100))
 
-
 	// 循环语句
 }

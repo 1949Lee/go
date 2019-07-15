@@ -7,7 +7,6 @@ import (
 	"strconv"
 )
 
-
 // 整数转二进制，for循环圣略初始条件
 func convertToBin(n int) string {
 	bin := ""
@@ -22,7 +21,7 @@ func convertToBin(n int) string {
 }
 
 func printlnByFile(name string) {
-	if file, err := os.Open(name);err != nil{
+	if file, err := os.Open(name); err != nil {
 		panic(err)
 	} else {
 		scanner := bufio.NewScanner(file)
@@ -35,9 +34,9 @@ func printlnByFile(name string) {
 
 func main() {
 	fmt.Println(
-		convertToBin(5), // 101
+		convertToBin(5),  // 101
 		convertToBin(13), // 1101
-		convertToBin(0), // 0
+		convertToBin(0),  // 0
 	)
 
 	printlnByFile("note.md")

@@ -55,7 +55,7 @@ func apply(op func(int, int) int, a, b int) int {
 func sum(numbers ...int) int {
 	s := 0
 	for i := range numbers {
-		s += numbers[i];
+		s += numbers[i]
 	}
 	return s
 }

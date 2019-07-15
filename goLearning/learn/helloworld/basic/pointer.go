@@ -16,4 +16,7 @@ func main() {
 	var pc *string = &c
 	*pc = "d"
 	fmt.Println(*pc)
+
+	var s = "abc"
+	fmt.Println(s[0] == 'a')
 }

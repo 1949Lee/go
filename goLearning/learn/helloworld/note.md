@@ -1,5 +1,5 @@
 ### 变量定义
-见 basic.go
+见 main.go
 变量常量的标识符慎用大小写，因为表示不同的含义。大写开头表示public类型
 
 
@@ -53,3 +53,47 @@ var a []int 是切片
 
 
 ### 切片
+```go
+arr := [...]int{0, 1, 2, 3, 4, 5, 6, 7} // 原数组
+arr[2:],arr[:] //都是切片
+```
+改变切片里的值就会改变原数组，改变原数组的值相应的切片就会改变。
+切片作为函数参数的时候，改变切片的内容就会改变原数组。
+所以切片是对数组的真正数据存储的映射
+切片对切片的扩展：详见slices.go、slicesOperations.go
+
+### Map
+键值对集合，
+```go
+map[string]string{} // 表示一个key是string类型，value是string类型的。map。
+map[string]map[int]int{} // 复合map：表示一个key是string类型，value是另外一种map。
+```
+遍历map,每次遍历输出的顺序可能会不同，因为键值对在map中是无序的，go中的map是哈希map
+map中的key：1、必须是可以比较的类型；2、除了slice、map、function的内置类型；3、不含slice、map、function的Struct
+
+
+### 字符串及rune的处理
+go中的char类型就是rune，详见string.go
+
+
+### 结构体和方法
+结构体的方法的接受者可以定义两种：结构体本身的类型，和结构体的指针。无论定义哪一种，调用结构体的方法的时候即可以使用结构体的指针，也可以使用结构体。go的编译器会自动根据结构的方法定义的接受者类型来做对应。
+详见node.go
+
+### 包和封装
+封装：
+1. 名字一般使用驼峰CamelCase
+2. 包内的方法或者变量——首字母大写：public；首字母小写：private
+
+包：
+1. 每个目录一个包，可以和目录名字不一样
+2. main包包含可执行入口。如果目录下有main函数，那该目录下只能是main包。
+3. 为结构定义的方法必须放在同一个包内，但是可以放不同的文件。
+
+扩展别人的包或者扩展系统的包
+
+例子见advance/tree
+
+### 内存分配是go自助管理的，需要理解
+[1](https://segmentfault.com/a/1190000019389694?utm_campaign=studygolang.com&utm_medium=studygolang.com&utm_source=studygolang.com#articleHeader8)
+[2](https://www.jianshu.com/p/84d231048bc4)
