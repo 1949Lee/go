@@ -14,3 +14,5 @@ src
 
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
+github.com
+golang.org
