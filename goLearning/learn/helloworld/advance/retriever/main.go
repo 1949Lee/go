@@ -1,19 +1,47 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"goLearning/learn/helloworld/advance/retriever/retriever"
+	"io"
+	"os"
+	"strings"
 	"time"
 )
 
-// 接口，该接口内部有一个get方法，只要实现了这个get方法的结构体都视为实现了这个接口
+// 接口一，该接口内部有一个get方法，只要实现了这个get方法的结构体都视为实现了这个接口
 type Retriever interface {
 	Get(url string) string
 }
 
+// 接口二，该接口内部有一个post方法，只要实现了这个post方法的结构体都视为实现了这个接口
+type Poster interface {
+	Post(url string) string
+}
+
+//接口三，接口一和接口二组合而成
+type RetrieverPoster interface {
+	Retriever
+	Poster
+}
+
+//接口的组合
+
 // download方法需要一个实现者，这个实现者就是上面那个接口。不管这个接口背后是什么结构体
 func download(r Retriever, url string) string {
 	return r.Get(url)
+}
+
+func session(r RetrieverPoster) string {
+	fmt.Println(r.Get("https://www.jiaxuanlee.com"))
+	return r.Post("李佳轩")
+}
+func printLine(reader io.Reader) {
+	scanner := bufio.NewScanner(reader)
+	for scanner.Scan() {
+		fmt.Println(scanner.Text())
+	}
 }
 
 func main() {
@@ -21,6 +49,7 @@ func main() {
 	r = &retriever.Retriever{
 		UserAgent: "Mozilla/5.0",
 		TimeOut:   time.Minute,
+		Name:      "Lee",
 	}
 	//fmt.Println(download(r, "https://www.jiaxuanlee.com"))
 
@@ -54,5 +83,25 @@ func main() {
 	} else {
 		//转换出错了 fmt.Errorf("error %s:", v)
 	}
+	rp := &retriever.Retriever{Name: "lijiaxuan"}
+	fmt.Println(session(rp))
+
+	//实现一些系统接口一：Stringer
+	fmt.Println(rp.String())
+
+	//实现一些系统接口二：io.Reader/io.Writer,基于这两个接口可以延伸出很多读写的方法：http、字符串、文件、fmt等等
+	fmt.Println()
+	fmt.Println("Contents of advance/tree/node.json:")
+	if f, err := os.Open("advance/tree/node.json"); err == nil {
+		//*File实现了接口io.reader
+		printLine(f)
+	}
+	fmt.Println()
+	s := strings.NewReader(`第一行
+第二行
+第三行
+空行
+第五行`)
+	printLine(s)
 
 }
