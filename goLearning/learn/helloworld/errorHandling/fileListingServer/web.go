@@ -28,11 +28,13 @@ func errorWrapper(handler appHandler) func(http.ResponseWriter, *http.Request) {
 
 		err := handler(writer, request)
 
-		// 如果
+		// 如果路由对应的api返回已经处理过的错误
 		if r, ok := err.(UserError); ok {
 			http.Error(writer, r.Message(), http.StatusInternalServerError)
 			return
 		}
+
+		// 发生一些可以预料，但是路由对应的api没有处理的错误
 		if err != nil {
 			log.Printf("Error handling request: %s", err.Error())
 			status := http.StatusOK
