@@ -37,6 +37,7 @@ func session(r RetrieverPoster) string {
 	fmt.Println(r.Get("https://www.jiaxuanlee.com"))
 	return r.Post("李佳轩")
 }
+
 func printLine(reader io.Reader) {
 	scanner := bufio.NewScanner(reader)
 	for scanner.Scan() {

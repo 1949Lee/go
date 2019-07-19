@@ -45,7 +45,12 @@ func main() {
 	root.Left.Right.Print()
 	fmt.Println()
 	root.Traverse()
-	fmt.Println()
+	nodeCount := 0
+	root.TraverseFunc(func(n *tree.Node) {
+		nodeCount++
+	})
+	fmt.Println("Node count of root:", nodeCount)
+
 	posRoot := MyTreeNode{node: &root}
 	posRoot.posOrder()
 	fmt.Println()
