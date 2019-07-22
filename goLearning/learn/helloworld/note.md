@@ -95,5 +95,12 @@ go中的char类型就是rune，详见string.go
 例子见advance/tree
 
 ### 内存分配是go自助管理的，需要理解
-[1](https://segmentfault.com/a/1190000019389694?utm_campaign=studygolang.com&utm_medium=studygolang.com&utm_source=studygolang.com#articleHeader8)
-[2](https://www.jianshu.com/p/84d231048bc4)
+[文章1](https://segmentfault.com/a/1190000019389694?utm_campaign=studygolang.com&utm_medium=studygolang.com&utm_source=studygolang.com#articleHeader8)
+[文章2](https://www.jianshu.com/p/84d231048bc4)
+
+
+### 测试
+[文章1](http://c.biancheng.net/view/124.html)
+1. 普通测试：详见maps_test.go; 可用命令行执行
+2. 覆盖率测试：详见maps_test.go; go内置了覆盖率测试的语句。可用命令行执行
+3. 性能测试：详见maps_test.go; go内置了性能能测试的语句。可用命令行执行
