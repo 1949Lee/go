@@ -100,7 +100,55 @@ go中的char类型就是rune，详见string.go
 
 
 ### 测试
+go help testflag可以查看能运行的命令
 [文章1](http://c.biancheng.net/view/124.html)
 1. 普通测试：详见maps_test.go; 可用命令行执行
 2. 覆盖率测试：详见maps_test.go; go内置了覆盖率测试的语句。可用命令行执行
 3. 性能测试：详见maps_test.go; go内置了性能能测试的语句。可用命令行执行
+
+PProf:GO 性能测试工具PProf
+[文章1](https://blog.csdn.net/guyan0319/article/details/85007181)
+[文章2](https://www.jianshu.com/p/4e4ff6be6af9)
+
+代码性能优化过程：
+1. 输出性能测试时cpu使用数据。go test -bench . -cpuprofile=cpu.out
+2. 查看cpu使用数据。go tool pprof。// 用web查看
+3. 根据生成的svg查看慢在哪里，然后优化代码。
+4. 继续以上3个步骤，直至代码优化到满意为止（总运行时间越来越快，直至满意）
+5. 注意空间换时间的问题，是否值得。
+
+webApi测试可以通过httptest包来测试：利用包来启动一个服务，然后发送请求。详见errorhandling_test.go
+
+
+### 文档
+godoc表示生成go文件的注释，go doc表示查看go文件的注释。
+godoc的举例使用请看queue.go
+
+
+### go语言的并发模型：CSP
+
+### 协程
+进程、线程、协程。协程并不是go特有的，只不过go支持的比较好。
+协程特点：
+1. 非抢占式多任务处理，操作系统不会像线程那样，去循环的切换线程的执行。有协程主动交出控制权
+2. 编译器、解释器。虚拟机层面的多任务。go语言有背后有自己的调度器。
+3. 多个协程可能在一个或多个线程上运行。这点由调度器决定。
+4. 子程序是协程的一个特例
+实现：任何函数加上go执行，就会将函数送给调度器运行。调度器会在合适的点进行切换（不是随意切换）
+
+goroutine可能会切换的点
++ I/O,select
++ channel
++ 等待锁
++ 函数调用（有时）
++ runtime.Gosched()
+以上只是参考。
+
+
+### channel
+定义一个channel`c := make(chan int)`
+channel发送数据之后一定要有人来接受
+channel作为返回值得时候有三种类型。
+1. func() chan int {} 这种函数返回的channel可以发送也可以接受。
+2. func() chan<- int {} 这种函数返回的channel只可以向这个channel发送数据。
+3. func() <-chan int {} 这种函数返回的channel只可以从这个channel接受数据。
