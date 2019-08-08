@@ -41,7 +41,7 @@ func main() {
 	fmt.Println()
 
 	//结构体调用自己的方法时不用关心是指针调用该方法，还是结构体调用该方法，更不用关心该方法定义的是指针的还是结构体的，go的编译器会自动识别
-	root.Left.Right.SetValue(2)
+	root.Left.Right.SetValue(12)
 	root.Left.Right.Print()
 	fmt.Println()
 	root.Traverse()
@@ -50,6 +50,14 @@ func main() {
 		nodeCount++
 	})
 	fmt.Println("Node count of root:", nodeCount)
+	c := root.TraverseByChannel()
+	maxNode := 0
+	for n := range c {
+		if n.Value > maxNode {
+			maxNode = n.Value
+		}
+	}
+	fmt.Println("Max node of root: ",maxNode)
 
 	posRoot := MyTreeNode{node: &root}
 	posRoot.posOrder()

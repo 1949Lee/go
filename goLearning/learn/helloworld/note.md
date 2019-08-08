@@ -152,3 +152,14 @@ channel作为返回值得时候有三种类型。
 1. func() chan int {} 这种函数返回的channel可以发送也可以接受。
 2. func() chan<- int {} 这种函数返回的channel只可以向这个channel发送数据。
 3. func() <-chan int {} 这种函数返回的channel只可以从这个channel接受数据。
+例子：利用channel实现树的遍历。详见advance/tree/traverse.go
+
+
+### 传统的同步机制(尽量不去使用)
+除了go比较特色的channel+go routine之外，go也可以像传统语言一样的方式去并发处理
+1. Mutex、atomic：go内置的mutex互斥变量和atomic操作。
+2. Cond:
+
+### http、http.Client
+http.Client可以构造一个客户端，然后通过client.Do(req)的方式来发送请求。
+可以使用[net/http/pprof](https://cloud.tencent.com/developer/section/1143647)来查看web服务的性能
