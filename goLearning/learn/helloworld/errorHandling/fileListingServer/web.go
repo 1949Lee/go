@@ -4,6 +4,7 @@ import (
 	"goLearning/learn/helloworld/errorHandling/fileListingServer/fileListing"
 	"log"
 	"net/http"
+	_ "net/http/pprof"
 	"os"
 )
 
@@ -61,5 +62,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+
+	// 浏览器中打开http://localhost:8080/debug/pprof/ 来查看web服务器的相关性能
 
 }

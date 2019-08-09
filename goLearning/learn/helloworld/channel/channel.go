@@ -43,10 +43,18 @@ func bufferedChannel() {
 	//设置channel有一个大小为3的缓冲区。可以存储3个数据。当缓冲区没有空间时，需要goroutine来接受数据
 	c := make(chan int, 3)
 	go worker(11, c)
-	c <- 'a'
-	c <- 'b'
-	c <- 'c'
-	c <- 'd'
+	go worker(22, c)
+	go func() {
+		c <- 'a'
+		c <- 'b'
+		c <- 'c'
+	}()
+
+	go func() {
+		c <- 'e'
+		c <- 'f'
+		c <- 'g'
+	}()
 }
 func channelClose() {
 	c := make(chan int)
@@ -60,11 +68,11 @@ func channelClose() {
 }
 
 func main() {
-	channelDemo()
+	//channelDemo()
 
-	//bufferedChannel()
+	bufferedChannel()
 
 	//channelClose()
-	time.Sleep(time.Millisecond)
+	time.Sleep(3 * time.Millisecond)
 
 }
