@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>博客测试网页</title>
+</head>
+<body>
+
+
+<div style="text-align: center">
+    <label for="content">博客内容</label>
+</div>
+<div style="text-align: center">
+    <textarea id="content" style="border: 1px solid rgba(0,0,0,.267);vertical-align: middle" cols="100" rows="20"></textarea>
+</div>
+<div style="text-align: center">
+    <button type="button" onclick="save()">确认</button>
+</div>
+
+
+<script>
+
+    function save() {
+        let xhr = new XMLHttpRequest();
+        xhr.open("POST","http://127.0.0.1:1314", true);
+        xhr.setRequestHeader("Content-Type", "application/json; charset=utf-8");
+        xhr.onreadystatechange = function(){
+            if (xhr.readyState === 4 && xhr.status === 200) {
+                console.log("发送成功：",JSON.parse(xhr.responseText))
+            }
+        };
+        xhr.send(JSON.stringify({text:document.getElementById('content').value}))
+    }
+
+</script>
+
+</body>
+</html>
