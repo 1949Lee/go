@@ -14,12 +14,4 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	//if file, err := os.Open("./test/test.md"); err != nil {
-	//	panic(err)
-	//} else {
-	//	scanner := bufio.NewScanner(file)
-	//	for scanner.Scan() {
-	//		fmt.Println(scanner.Text())
-	//	}
-	//}
 }
