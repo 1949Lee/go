@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"bufio"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -45,10 +44,11 @@ func ReadMarkdownText(writer http.ResponseWriter, r *http.Request) {
 	}
 	result.Code = 0
 	var list []string
-	scanner := bufio.NewScanner(strings.NewReader(param.Text))
-	for scanner.Scan() {
-		list = append(list, scanner.Text())
-	}
+	//scanner := bufio.NewScanner(strings.NewReader(param.Text))
+	//for scanner.Scan() {
+	//	list = append(list, scanner.Text())
+	//}
+	list = strings.Split(param.Text, "\n")
 	result.Data = struct {
 		Text string   `json:"text"`
 		List []string `json:"list"`
