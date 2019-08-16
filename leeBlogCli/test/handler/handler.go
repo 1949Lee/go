@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"leeBlogCli/test/parser"
 	"net/http"
 	"strings"
 	"time"
@@ -48,13 +49,17 @@ func ReadMarkdownText(writer http.ResponseWriter, r *http.Request) {
 	//for scanner.Scan() {
 	//	list = append(list, scanner.Text())
 	//}
+
+	// 这种split的方法比bufio那种读取块100-500微秒。
 	list = strings.Split(param.Text, "\n")
+	line := parser.Line{Origin: []rune(list[0])}
+	line.Parse()
 	result.Data = struct {
 		Text string   `json:"text"`
 		List []string `json:"list"`
 	}{
 		Text: "success",
-		List: list,
+		List: line.Tokens,
 	}
 	b, err := json.Marshal(result)
 	if err != nil {
