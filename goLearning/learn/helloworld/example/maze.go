@@ -1,3 +1,6 @@
+/**
+迷宫找最短路径
+**/
 package main
 
 import (
@@ -47,6 +50,7 @@ var dirs = []point{
 	{0, -1}, {1, 0}, {0, 1}, {-1, 0},
 }
 
+// 广度优先遍历算法
 func walk(maze [][]int, start, end point) [][]int {
 	steps := make([][]int, len(maze))
 	for i := range maze {
@@ -86,6 +90,7 @@ func walk(maze [][]int, start, end point) [][]int {
 	return steps
 }
 
+// 从出口广度优先遍历算法。找出路径
 func getPath(steps [][]int, start, end point) []point {
 	endStep, _ := end.locate(steps)
 	P := []point{end}
