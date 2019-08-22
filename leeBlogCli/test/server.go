@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"leeBlogCli/test/handler"
 	"net/http"
+	_ "net/http/pprof"
 )
 
 func main() {

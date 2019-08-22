@@ -1,11 +1,12 @@
 package parser
 
+import "bytes"
+
 // 行内状态类型
 type LineStateType int
 
 // 行内状态枚举
 type LineStateEnum struct {
-
 	// 开始态
 	Start LineStateType
 
@@ -35,7 +36,7 @@ var LineState = LineStateEnum{
 type Line struct {
 	Origin           []rune
 	state            LineStateType
-	Tokens           []string
+	Tokens           []Token
 	unresolvedTokens []unresolvedToken
 	textStart        int
 }
@@ -43,6 +44,24 @@ type Line struct {
 type unresolvedToken struct {
 	text  rune
 	start bool
+}
+type Token struct {
+	Text      string `json:"text"`
+	TokenType string `json:"tokenType"`
+}
+
+func joinTokens(p []unresolvedToken, str string) string {
+	result := ""
+	var buffer bytes.Buffer
+	for _, t := range p {
+		buffer.WriteString(string(t.text))
+		if str != "" {
+			buffer.WriteString(str)
+		}
+	}
+	result = buffer.String()
+
+	return result
 }
 
 //type token struct {
@@ -69,7 +88,7 @@ func (l *Line) Parse() {
 
 				// 2. 并且还要把*之前的token的text（若有）。
 				if l.textStart != -1 {
-					l.Tokens = append(l.Tokens, string(l.Origin[l.textStart:i]))
+					l.Tokens = append(l.Tokens, Token{string(l.Origin[l.textStart:i]), "text"})
 					l.textStart = -1
 				}
 
@@ -78,6 +97,7 @@ func (l *Line) Parse() {
 				// 如果读到非语法字符，则判断是否为第一个，若是第一个，则记录位置。否则继续扫描下一个字符。
 				if l.textStart == -1 {
 					l.textStart = i
+					//l.state = LineState.State11
 				}
 				continue
 			}
@@ -103,13 +123,31 @@ func (l *Line) Parse() {
 			switch ch {
 			case '*':
 				l.state = LineState.Start
-				if l.textStart != -1 {
-					l.Tokens = append(l.Tokens, string(l.Origin[l.textStart:i]))
-					l.textStart = -1
+				length := len(l.unresolvedTokens)
+				if length > 0 {
+					l.unresolvedTokens = l.unresolvedTokens[:length-1]
+					if l.textStart != -1 {
+						if len(l.unresolvedTokens) > 0 {
+							l.Tokens = append(l.Tokens, Token{string(l.Origin[l.textStart:i]), "italic"})
+						} else {
+
+						}
+						l.textStart = -1
+					} else {
+						l.Tokens = append(l.Tokens, Token{"", "italic"})
+					}
 				} else {
-					l.Tokens = append(l.Tokens, "")
+					l.unresolvedTokens = append(l.unresolvedTokens, struct {
+						text  rune
+						start bool
+					}{text: '*', start: true})
+
+					// 2. 并且还要把*之前的token的text（若有）。
+					if l.textStart != -1 {
+						l.Tokens = append(l.Tokens, Token{string(l.Origin[l.textStart:i]), "text"})
+						l.textStart = -1
+					}
 				}
-				l.unresolvedTokens = []unresolvedToken{}
 				continue
 			default:
 				// 如果读到非语法字符，则判断是否为第一个，若是第一个，则记录位置。否则继续扫描下一个字符。
@@ -122,9 +160,22 @@ func (l *Line) Parse() {
 
 	}
 	if len(l.unresolvedTokens) > 0 {
-		l.Tokens = append(l.Tokens, "*")
+		//l.Tokens = append(l.Tokens, "*")
+		if len(l.Tokens) > 0 {
+			l.Tokens[len(l.Tokens)-1].Text += joinTokens(l.unresolvedTokens, "")
+		} else {
+			l.Tokens = append(l.Tokens, Token{joinTokens(l.unresolvedTokens, ""), "text"})
+		}
 	}
 	if l.textStart != -1 {
-		l.Tokens = append(l.Tokens, string(l.Origin[l.textStart:]))
+		if len(l.Tokens) > 0 {
+			if l.Tokens[len(l.Tokens)-1].TokenType == "text" {
+				l.Tokens[len(l.Tokens)-1].Text += string(l.Origin[l.textStart:])
+			} else {
+				l.Tokens = append(l.Tokens, Token{string(l.Origin[l.textStart:]), "text"})
+			}
+		} else {
+			l.Tokens = append(l.Tokens, Token{string(l.Origin[l.textStart:]), "text"})
+		}
 	}
 }
