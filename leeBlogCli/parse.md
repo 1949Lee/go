@@ -75,8 +75,8 @@
 <text> ::= <任意字符>{0,}<html标签>{0,}<任意字符>{0,}
 <italic> ::= *<text>*
 <bold> ::= **<text>**
-<bold-italic> ::= ***<text>****
-<deleted-text> ::= ***<text>****
+<bold-italic> ::= ***<text>***
+<deleted-text> ::= ~~<text>~~
 <web-link> ::= [<text> | <italic> | <bold> | <bold-italic> | <deleted-text>](<链接URL>)
 <background-strong> ::= `<web-link> | <text> | <italic> | <bold> | <bold-italic> | <deleted-text>`
 <foot-note> ::= [^<数字>]
