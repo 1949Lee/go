@@ -163,3 +163,9 @@ channel作为返回值得时候有三种类型。
 ### http、http.Client
 http.Client可以构造一个客户端，然后通过client.Do(req)的方式来发送请求。
 可以使用[net/http/pprof](https://cloud.tencent.com/developer/section/1143647)来查看web服务的性能
+
+
+
+### 爬虫实战部分中可以记录的内容。
+1. 获取URL网页之后根据不同的编码格式（gbk等）统一为utf8编码格式：详见crwaler/main.go中`determineEncoding`方法
+2. golang中的[jQuery](https://github.com/PuerkitoBio/goquery)。
