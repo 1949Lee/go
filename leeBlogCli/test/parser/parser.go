@@ -76,7 +76,7 @@ func appendNewToken(l *Line, t *Token) {
 	case "bold":
 		t.Html = "<span class=\"bold\">" + t.Text + "</span>"
 	case "bold-italic":
-		t.Html = "<span class=\"bold\">" + t.Text + "</span>"
+		t.Html = "<span class=\"bold-italic\">" + t.Text + "</span>"
 	}
 	l.Tokens = append(l.Tokens, *t)
 }
