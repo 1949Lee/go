@@ -50,6 +50,7 @@ type unresolvedToken struct {
 type Token struct {
 	Text      string `json:"text"`
 	TokenType string `json:"tokenType"`
+	Html      string `json:"html"`
 }
 
 func joinTokens(p []unresolvedToken, str string) string {
@@ -64,6 +65,20 @@ func joinTokens(p []unresolvedToken, str string) string {
 	result = buffer.String()
 
 	return result
+}
+
+func appendNewToken(l *Line, t *Token) {
+	switch t.TokenType {
+	case "text":
+		t.Html = "<span class=\"text\">" + t.Text + "</span>"
+	case "italic":
+		t.Html = "<span class=\"italic\">" + t.Text + "</span>"
+	case "bold":
+		t.Html = "<span class=\"bold\">" + t.Text + "</span>"
+	case "bold-italic":
+		t.Html = "<span class=\"bold\">" + t.Text + "</span>"
+	}
+	l.Tokens = append(l.Tokens, *t)
 }
 
 //type token struct {
@@ -92,7 +107,7 @@ func (l *Line) Parse() {
 
 				// 2. 并且还要把*之前的token的text（若有）。
 				if l.textStart != -1 {
-					l.Tokens = append(l.Tokens, Token{string(l.Origin[l.textStart:i]), "text"})
+					appendNewToken(l, &Token{Text: string(l.Origin[l.textStart:i]), TokenType: "text"})
 					l.textStart = -1
 				}
 
@@ -138,7 +153,7 @@ func (l *Line) Parse() {
 					}{text: '*', start: true})
 
 					if l.textStart != -1 {
-						l.Tokens = append(l.Tokens, Token{string(l.Origin[l.textStart:i]), "text"})
+						appendNewToken(l, &Token{Text: string(l.Origin[l.textStart:i]), TokenType: "text"})
 						l.textStart = -1
 					}
 					l.state = LineState.State1
@@ -159,7 +174,7 @@ func (l *Line) Parse() {
 		if len(l.Tokens) > 0 {
 			l.Tokens[len(l.Tokens)-1].Text += joinTokens(l.unresolvedTokens, "")
 		} else {
-			l.Tokens = append(l.Tokens, Token{joinTokens(l.unresolvedTokens, ""), "text"})
+			appendNewToken(l, &Token{Text: joinTokens(l.unresolvedTokens, ""), TokenType: "text"})
 		}
 	}
 	if l.textStart != -1 {
@@ -167,10 +182,10 @@ func (l *Line) Parse() {
 			if l.Tokens[len(l.Tokens)-1].TokenType == "text" {
 				l.Tokens[len(l.Tokens)-1].Text += string(l.Origin[l.textStart:])
 			} else {
-				l.Tokens = append(l.Tokens, Token{string(l.Origin[l.textStart:]), "text"})
+				appendNewToken(l, &Token{Text: string(l.Origin[l.textStart:]), TokenType: "text"})
 			}
 		} else {
-			l.Tokens = append(l.Tokens, Token{string(l.Origin[l.textStart:]), "text"})
+			appendNewToken(l, &Token{Text: string(l.Origin[l.textStart:]), TokenType: "text"})
 		}
 	}
 }
@@ -223,10 +238,10 @@ func (l *Line) confirmTextType(i int) int {
 		} else {
 			temp = string(l.Origin[l.textStart:originIndex])
 		}
-		l.Tokens = append(l.Tokens, Token{temp, tokenType})
+		appendNewToken(l, &Token{Text: temp, TokenType: tokenType})
 		l.textStart = -1
 	} else {
-		l.Tokens = append(l.Tokens, Token{"", tokenType})
+		appendNewToken(l, &Token{Text: "", TokenType: tokenType})
 	}
 	return i
 }
