@@ -67,7 +67,7 @@ func joinTokens(p []unresolvedToken, str string) string {
 	return result
 }
 
-func appendNewToken(l *Line, t *Token) {
+func updateTokenHtmlByText(t *Token) {
 	switch t.TokenType {
 	case "text":
 		t.Html = "<span class=\"text\">" + t.Text + "</span>"
@@ -78,6 +78,10 @@ func appendNewToken(l *Line, t *Token) {
 	case "bold-italic":
 		t.Html = "<span class=\"bold-italic\">" + t.Text + "</span>"
 	}
+}
+
+func appendNewToken(l *Line, t *Token) {
+	updateTokenHtmlByText(t)
 	l.Tokens = append(l.Tokens, *t)
 }
 
@@ -173,6 +177,7 @@ func (l *Line) Parse() {
 		//l.Tokens = append(l.Tokens, "*")
 		if len(l.Tokens) > 0 {
 			l.Tokens[len(l.Tokens)-1].Text += joinTokens(l.unresolvedTokens, "")
+			updateTokenHtmlByText(&l.Tokens[len(l.Tokens)-1])
 		} else {
 			appendNewToken(l, &Token{Text: joinTokens(l.unresolvedTokens, ""), TokenType: "text"})
 		}
