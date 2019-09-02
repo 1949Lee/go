@@ -10,7 +10,6 @@ import (
 	"goLearning/learn/helloworld/crawler/zhenai/parser"
 	"golang.org/x/net/html/charset"
 	"golang.org/x/text/encoding"
-	"io"
 )
 
 func main() {
@@ -30,8 +29,8 @@ func main() {
 	all, err := ioutil.ReadAll(utf8reader)
 */
 //获取读取的网页内容的编码格式
-func determineEncoding(r io.Reader) encoding.Encoding {
-	bytes, err := bufio.NewReader(r).Peek(1024)
+func determineEncoding(r *bufio.Reader) encoding.Encoding {
+	bytes, err := r.Peek(1024)
 	if err != nil {
 		panic(err)
 	}
