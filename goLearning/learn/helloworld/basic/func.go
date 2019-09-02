@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"math"
 	"reflect"
 	"runtime"
 )
@@ -60,19 +59,42 @@ func sum(numbers ...int) int {
 	return s
 }
 
-func main() {
-	fmt.Println(eval(1, 3, "*"))
-	fmt.Println(eval(6, 3, "/"))
-	if q, r, err := div(13, 4); err == nil {
-		fmt.Println(q, r)
-	} else {
-		fmt.Println(err)
-	}
+func closure() []func() {
+	var q []func()
+	for i := 0; i < 10; i++ {
+		//正确使用上下文及闭包
+		//func (i int) {
+		//	q = append(q, func() {
+		//		fmt.Println(i)
+		//	})
+		//}(i)
 
-	// 使用匿名函数
-	fmt.Println(apply(
-		func(a int, b int) int {
-			return int(math.Pow(float64(a), float64(b)))
-		}, 3, 4))
-	fmt.Println(sum(1, 2, 3, 4, 5, 6))
+		//// 错误使用上下文及闭包
+		//q = append(q, func() {
+		//	fmt.Println(i)
+		//})
+	}
+	return q
+}
+
+func main() {
+	//fmt.Println(eval(1, 3, "*"))
+	//fmt.Println(eval(6, 3, "/"))
+	//if q, r, err := div(13, 4); err == nil {
+	//	fmt.Println(q, r)
+	//} else {
+	//	fmt.Println(err)
+	//}
+	//
+	//// 使用匿名函数
+	//fmt.Println(apply(
+	//	func(a int, b int) int {
+	//		return int(math.Pow(float64(a), float64(b)))
+	//	}, 3, 4))
+	//fmt.Println(sum(1, 2, 3, 4, 5, 6))
+
+	// 争取和错误使用上下文及闭包
+	q := closure()
+	q[0]() // 并没有打印出i = 0
+	q[1]() // 并没有打印出i = 1
 }

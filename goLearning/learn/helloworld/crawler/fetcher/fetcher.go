@@ -6,8 +6,12 @@ import (
 	"net/http"
 )
 
+var client = http.Client{}
+
 func Fetch(url string) (body []byte, err error) {
-	resp, err := http.Get(url)
+	request, err := http.NewRequest(http.MethodGet, url, nil)
+	request.Header.Add("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.142 Safari/537.36")
+	resp, err := client.Do(request)
 	if err != nil {
 		panic(err)
 	}
