@@ -44,8 +44,10 @@ type Line struct {
 }
 
 type unresolvedToken struct {
-	text  rune
-	start bool
+	text              rune
+	start             bool
+	tokenType         string
+	contentTokenStart int
 }
 type Token struct {
 	Text      string `json:"text"`
@@ -105,32 +107,29 @@ func (l *Line) Parse() {
 			case '*':
 
 				// 1. 遇到*之后。需要记录这个*留着判断。
-				l.unresolvedTokens = append(l.unresolvedTokens, struct {
-					text  rune
-					start bool
-				}{text: '*', start: true})
+				ut := unresolvedToken{text: '*', start: true, contentTokenStart: len(l.Tokens)}
+				l.unresolvedTokens = append(l.unresolvedTokens, ut)
 				l.state = LineState.ItalicStart
 
 				// 2. 并且还要把*之前的token的text（若有）。
 				if l.textStart != -1 {
 					appendNewToken(l, &Token{Text: string(l.Origin[l.textStart:i]), TokenType: "text"})
 					l.textStart = -1
+					l.unresolvedTokens[len(l.unresolvedTokens)-1].contentTokenStart = len(l.Tokens)
 				}
 
 				continue
 			case '~':
 
 				// 1. 遇到*之后。需要记录这个*留着判断。
-				l.unresolvedTokens = append(l.unresolvedTokens, struct {
-					text  rune
-					start bool
-				}{text: '~', start: true})
+				l.unresolvedTokens = append(l.unresolvedTokens, unresolvedToken{text: '~', start: true, contentTokenStart: len(l.Tokens)})
 				l.state = LineState.DeletedTextStart
 
 				// 2. 并且还要把*之前的token的text（若有）。
 				if l.textStart != -1 {
 					appendNewToken(l, &Token{Text: string(l.Origin[l.textStart:i]), TokenType: "text"})
 					l.textStart = -1
+					l.unresolvedTokens[len(l.unresolvedTokens)-1].contentTokenStart = len(l.Tokens)
 				}
 
 				continue
@@ -145,10 +144,7 @@ func (l *Line) Parse() {
 			switch ch {
 			case '~':
 				if l.textStart == -1 {
-					l.unresolvedTokens = append(l.unresolvedTokens, struct {
-						text  rune
-						start bool
-					}{text: '~', start: true})
+					l.unresolvedTokens = append(l.unresolvedTokens, unresolvedToken{text: '~', start: true})
 				}
 				continue
 			default:
@@ -167,10 +163,7 @@ func (l *Line) Parse() {
 					i = l.confirmDeletedText(i)
 					l.state = LineState.Start
 				} else {
-					l.unresolvedTokens = append(l.unresolvedTokens, struct {
-						text  rune
-						start bool
-					}{text: '~', start: true})
+					l.unresolvedTokens = append(l.unresolvedTokens, unresolvedToken{text: '~', start: true})
 
 					if l.textStart != -1 {
 						appendNewToken(l, &Token{Text: string(l.Origin[l.textStart:i]), TokenType: "text"})
@@ -190,10 +183,7 @@ func (l *Line) Parse() {
 			switch ch {
 			case '*':
 				if l.textStart == -1 {
-					l.unresolvedTokens = append(l.unresolvedTokens, struct {
-						text  rune
-						start bool
-					}{text: '*', start: true})
+					l.unresolvedTokens = append(l.unresolvedTokens, unresolvedToken{text: '*', start: true})
 				}
 				continue
 			default:
@@ -212,10 +202,7 @@ func (l *Line) Parse() {
 					i = l.confirmItalicType(i)
 					l.state = LineState.Start
 				} else {
-					l.unresolvedTokens = append(l.unresolvedTokens, struct {
-						text  rune
-						start bool
-					}{text: '*', start: true})
+					l.unresolvedTokens = append(l.unresolvedTokens, unresolvedToken{text: '*', start: true})
 
 					if l.textStart != -1 {
 						appendNewToken(l, &Token{Text: string(l.Origin[l.textStart:i]), TokenType: "text"})
