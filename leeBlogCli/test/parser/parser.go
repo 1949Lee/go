@@ -12,26 +12,26 @@ type LineStateEnum struct {
 	// 开始态
 	Start LineStateType
 
-	// 状态1
-	State1 LineStateType
+	// 斜体*开始
+	ItalicStart LineStateType
 
-	// 状态2
-	State2 LineStateType
+	// 斜体*结束
+	ItalicEnd LineStateType
 
-	// 状态11
-	State11 LineStateType
+	// 删除线~开始
+	DeletedTextStart LineStateType
 
-	// 状态12
-	State12 LineStateType
+	// 删除线~结束
+	DeletedTextEnd LineStateType
 }
 
 // 行内状态含义列表
 var LineState = LineStateEnum{
-	Start:   1,
-	State1:  2,
-	State2:  3,
-	State11: 11,
-	State12: 12,
+	Start:            1,
+	ItalicStart:      2,
+	ItalicEnd:        21,
+	DeletedTextStart: 3,
+	DeletedTextEnd:   31,
 }
 
 // Markdown的每一行
@@ -77,6 +77,8 @@ func updateTokenHtmlByText(t *Token) {
 		t.Html = "<span class=\"bold\">" + t.Text + "</span>"
 	case "bold-italic":
 		t.Html = "<span class=\"bold-italic\">" + t.Text + "</span>"
+	case "deleted-text":
+		t.Html = "<span class=\"deleted-text\">" + t.Text + "</span>"
 	}
 }
 
@@ -107,7 +109,23 @@ func (l *Line) Parse() {
 					text  rune
 					start bool
 				}{text: '*', start: true})
-				l.state = LineState.State1
+				l.state = LineState.ItalicStart
+
+				// 2. 并且还要把*之前的token的text（若有）。
+				if l.textStart != -1 {
+					appendNewToken(l, &Token{Text: string(l.Origin[l.textStart:i]), TokenType: "text"})
+					l.textStart = -1
+				}
+
+				continue
+			case '~':
+
+				// 1. 遇到*之后。需要记录这个*留着判断。
+				l.unresolvedTokens = append(l.unresolvedTokens, struct {
+					text  rune
+					start bool
+				}{text: '~', start: true})
+				l.state = LineState.DeletedTextStart
 
 				// 2. 并且还要把*之前的token的text（若有）。
 				if l.textStart != -1 {
@@ -120,11 +138,55 @@ func (l *Line) Parse() {
 				// 如果读到非语法字符，则判断是否为第一个，若是第一个，则记录位置。否则继续扫描下一个字符。
 				if l.textStart == -1 {
 					l.textStart = i
-					//l.state = LineState.State11
 				}
 				continue
 			}
-		case LineState.State1:
+		case LineState.DeletedTextStart:
+			switch ch {
+			case '~':
+				if l.textStart == -1 {
+					l.unresolvedTokens = append(l.unresolvedTokens, struct {
+						text  rune
+						start bool
+					}{text: '~', start: true})
+				}
+				continue
+			default:
+				// 如果读到非语法字符，则判断是否为第一个，若是第一个，则记录位置。否则继续扫描下一个字符。
+				if l.textStart == -1 {
+					l.textStart = i
+					l.state = LineState.DeletedTextEnd
+				}
+				continue
+			}
+		case LineState.DeletedTextEnd:
+			switch ch {
+			case '~':
+				length := len(l.unresolvedTokens)
+				if length > 0 {
+					i = l.confirmDeletedText(i)
+					l.state = LineState.Start
+				} else {
+					l.unresolvedTokens = append(l.unresolvedTokens, struct {
+						text  rune
+						start bool
+					}{text: '~', start: true})
+
+					if l.textStart != -1 {
+						appendNewToken(l, &Token{Text: string(l.Origin[l.textStart:i]), TokenType: "text"})
+						l.textStart = -1
+					}
+					l.state = LineState.DeletedTextStart
+				}
+				continue
+			default:
+				// 如果读到非语法字符，则判断是否为第一个，若是第一个，则记录位置。否则继续扫描下一个字符。
+				if l.textStart == -1 {
+					l.textStart = i
+				}
+				continue
+			}
+		case LineState.ItalicStart:
 			switch ch {
 			case '*':
 				if l.textStart == -1 {
@@ -138,17 +200,16 @@ func (l *Line) Parse() {
 				// 如果读到非语法字符，则判断是否为第一个，若是第一个，则记录位置。否则继续扫描下一个字符。
 				if l.textStart == -1 {
 					l.textStart = i
-					l.state = LineState.State11
+					l.state = LineState.ItalicEnd
 				}
 				continue
 			}
-		case LineState.State11:
+		case LineState.ItalicEnd:
 			switch ch {
 			case '*':
-				l.state = LineState.Start
 				length := len(l.unresolvedTokens)
 				if length > 0 {
-					i = l.confirmTextType(i)
+					i = l.confirmItalicType(i)
 					l.state = LineState.Start
 				} else {
 					l.unresolvedTokens = append(l.unresolvedTokens, struct {
@@ -160,7 +221,7 @@ func (l *Line) Parse() {
 						appendNewToken(l, &Token{Text: string(l.Origin[l.textStart:i]), TokenType: "text"})
 						l.textStart = -1
 					}
-					l.state = LineState.State1
+					l.state = LineState.ItalicStart
 				}
 				continue
 			default:
@@ -175,7 +236,7 @@ func (l *Line) Parse() {
 	}
 	if len(l.unresolvedTokens) > 0 {
 		//l.Tokens = append(l.Tokens, "*")
-		if len(l.Tokens) > 0 {
+		if len(l.Tokens) > 0 && l.Tokens[len(l.Tokens)-1].TokenType == "text" {
 			l.Tokens[len(l.Tokens)-1].Text += joinTokens(l.unresolvedTokens, "")
 			updateTokenHtmlByText(&l.Tokens[len(l.Tokens)-1])
 		} else {
@@ -183,20 +244,17 @@ func (l *Line) Parse() {
 		}
 	}
 	if l.textStart != -1 {
-		if len(l.Tokens) > 0 {
-			if l.Tokens[len(l.Tokens)-1].TokenType == "text" {
-				l.Tokens[len(l.Tokens)-1].Text += string(l.Origin[l.textStart:])
-			} else {
-				appendNewToken(l, &Token{Text: string(l.Origin[l.textStart:]), TokenType: "text"})
-			}
+		if len(l.Tokens) > 0 && l.Tokens[len(l.Tokens)-1].TokenType == "text" {
+			l.Tokens[len(l.Tokens)-1].Text += string(l.Origin[l.textStart:])
+			updateTokenHtmlByText(&l.Tokens[len(l.Tokens)-1])
 		} else {
 			appendNewToken(l, &Token{Text: string(l.Origin[l.textStart:]), TokenType: "text"})
 		}
 	}
 }
 
-// 行内判断token的类型的结束函数，token具体是斜体、加粗、粗斜体
-func (l *Line) confirmTextType(i int) int {
+// 行内判断斜体的具体token的类型的结束函数，token具体是斜体、加粗、粗斜体
+func (l *Line) confirmItalicType(i int) int {
 	// 保留初始流的读取位置下标
 	originIndex := i
 	var tokenType string
@@ -227,6 +285,51 @@ func (l *Line) confirmTextType(i int) int {
 		tokenType = "bold"
 	case 3: // 粗斜体
 		tokenType = "bold-italic"
+	}
+
+	// 返回正确的token内容
+	if l.textStart != -1 {
+		var temp string
+
+		if len(l.unresolvedTokens) > 0 {
+
+			//遗留的'开始*'需要放到内容的前方
+			temp = joinTokens(l.unresolvedTokens, "") + string(l.Origin[l.textStart:originIndex])
+
+			//制空开始数组。
+			l.unresolvedTokens = []unresolvedToken{}
+		} else {
+			temp = string(l.Origin[l.textStart:originIndex])
+		}
+		appendNewToken(l, &Token{Text: temp, TokenType: tokenType})
+		l.textStart = -1
+	} else {
+		appendNewToken(l, &Token{Text: "", TokenType: tokenType})
+	}
+	return i
+}
+
+// 行内判断删除线token的结束函数
+func (l *Line) confirmDeletedText(i int) int {
+	// 保留初始流的读取位置下标
+	originIndex := i
+	var tokenType string
+
+	endCount := 1 // endCount表示token的有效~的个数。前后各2个~表示删除线。
+	i++
+	l.unresolvedTokens = l.unresolvedTokens[:len(l.unresolvedTokens)-1]
+
+	// 如果读取的下一个字符是*，并且。可以与l.unresolvedTokens中的'开始*'匹配。则，有效*的数目+1
+	if l.Origin[i] == '~' && len(l.unresolvedTokens) > 0 {
+		l.unresolvedTokens = l.unresolvedTokens[:len(l.unresolvedTokens)-1]
+		endCount++
+	} else { // 不符合条件时，往前一个字符。不影响后续读取字符。
+		i--
+	}
+
+	//根据有效~的数目确定类型。前后各2个~表示删除线。
+	if endCount == 2 { // 删除线成立
+		tokenType = "deleted-text"
 	}
 
 	// 返回正确的token内容
