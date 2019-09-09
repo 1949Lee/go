@@ -144,14 +144,32 @@ func (l *Line) Parse() {
 			switch ch {
 			case '~':
 				if l.textStart == -1 {
-					l.unresolvedTokens = append(l.unresolvedTokens, unresolvedToken{text: '~', start: true})
+					if len(l.unresolvedTokens) == 2 {
+						l.textStart = i
+						l.state = LineState.DeletedTextEnd
+					} else {
+						l.unresolvedTokens = append(l.unresolvedTokens, unresolvedToken{text: '~', start: true})
+					}
 				}
 				continue
 			default:
 				// 如果读到非语法字符，则判断是否为第一个，若是第一个，则记录位置。否则继续扫描下一个字符。
 				if l.textStart == -1 {
-					l.textStart = i
-					l.state = LineState.DeletedTextEnd
+					if len(l.unresolvedTokens) == 2 {
+						l.textStart = i
+						l.state = LineState.DeletedTextEnd
+					} else {
+						l.textStart = i - 1
+						l.unresolvedTokens = l.unresolvedTokens[:len(l.unresolvedTokens)-1]
+						l.state = LineState.Start
+					}
+				} else {
+					if len(l.unresolvedTokens) == 2 {
+						l.state = LineState.DeletedTextEnd
+					} else {
+						l.unresolvedTokens = l.unresolvedTokens[:len(l.unresolvedTokens)-1]
+						l.state = LineState.Start
+					}
 				}
 				continue
 			}
@@ -307,7 +325,7 @@ func (l *Line) confirmDeletedText(i int) int {
 	l.unresolvedTokens = l.unresolvedTokens[:len(l.unresolvedTokens)-1]
 
 	// 如果读取的下一个字符是*，并且。可以与l.unresolvedTokens中的'开始*'匹配。则，有效*的数目+1
-	if l.Origin[i] == '~' && len(l.unresolvedTokens) > 0 {
+	if i < len(l.Origin) && l.Origin[i] == '~' && len(l.unresolvedTokens) > 0 {
 		l.unresolvedTokens = l.unresolvedTokens[:len(l.unresolvedTokens)-1]
 		endCount++
 	} else { // 不符合条件时，往前一个字符。不影响后续读取字符。
@@ -317,22 +335,26 @@ func (l *Line) confirmDeletedText(i int) int {
 	//根据有效~的数目确定类型。前后各2个~表示删除线。
 	if endCount == 2 { // 删除线成立
 		tokenType = "deleted-text"
+	} else {
+		l.unresolvedTokens = append(l.unresolvedTokens, unresolvedToken{text: '~', start: true})
+		return i
 	}
 
 	// 返回正确的token内容
 	if l.textStart != -1 {
 		var temp string
-
+		//
 		if len(l.unresolvedTokens) > 0 {
-
-			//遗留的'开始*'需要放到内容的前方
-			temp = joinTokens(l.unresolvedTokens, "") + string(l.Origin[l.textStart:originIndex])
-
-			//制空开始数组。
-			l.unresolvedTokens = []unresolvedToken{}
+			//
+			//    //遗留的'开始*'需要放到内容的前方
+			//    temp = joinTokens(l.unresolvedTokens, "") + string(l.Origin[l.textStart:originIndex])
+			//
+			//    //制空开始数组。
+			//   l.unresolvedTokens = []unresolvedToken{}
 		} else {
-			temp = string(l.Origin[l.textStart:originIndex])
+			//    temp = string(l.Origin[l.textStart:originIndex])
 		}
+		temp = string(l.Origin[l.textStart:originIndex])
 		appendNewToken(l, &Token{Text: temp, TokenType: tokenType})
 		l.textStart = -1
 	} else {
