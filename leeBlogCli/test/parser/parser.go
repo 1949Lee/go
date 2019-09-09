@@ -96,6 +96,7 @@ func appendNewToken(l *Line, t *Token) {
 
 // 行内转换的解析函数
 func (l *Line) Parse() {
+	//line := parser.Line{Origin: []rune(list[0]), Tokens: []parser.Token{}}
 	l.state = LineState.Start
 	l.textStart = -1
 	for i := 0; i < len(l.Origin); i++ {
@@ -257,6 +258,360 @@ func (l *Line) Parse() {
 		}
 	}
 }
+
+func (l *Line) ItalicTextParse() {
+	l.state = LineState.Start
+	l.textStart = -1
+	for i := 0; i < len(l.Origin); i++ {
+		ch := l.Origin[i]
+		switch l.state {
+		case LineState.Start:
+			l.unresolvedTokens = []unresolvedToken{}
+			switch ch {
+			case '*':
+
+				// 1. 遇到*之后。需要记录这个*留着判断。
+				ut := unresolvedToken{text: '*', start: true, contentTokenStart: len(l.Tokens)}
+				l.unresolvedTokens = append(l.unresolvedTokens, ut)
+				l.state = LineState.ItalicStart
+
+				// 2. 并且还要把*之前的token的text（若有）。
+				if l.textStart != -1 {
+					appendNewToken(l, &Token{Text: string(l.Origin[l.textStart:i]), TokenType: "text"})
+					l.textStart = -1
+					l.unresolvedTokens[len(l.unresolvedTokens)-1].contentTokenStart = len(l.Tokens)
+				}
+
+				continue
+			default:
+				// 如果读到非语法字符，则判断是否为第一个，若是第一个，则记录位置。否则继续扫描下一个字符。
+				if l.textStart == -1 {
+					l.textStart = i
+				}
+				continue
+			}
+		case LineState.ItalicStart:
+			switch ch {
+			case '*':
+				if l.textStart == -1 {
+					l.unresolvedTokens = append(l.unresolvedTokens, unresolvedToken{text: '*', start: true})
+				}
+				continue
+			default:
+				// 如果读到非语法字符，则判断是否为第一个，若是第一个，则记录位置。否则继续扫描下一个字符。
+				if l.textStart == -1 {
+					l.textStart = i
+					l.state = LineState.ItalicEnd
+				}
+				continue
+			}
+		case LineState.ItalicEnd:
+			switch ch {
+			case '*':
+				length := len(l.unresolvedTokens)
+				if length > 0 {
+					i = l.confirmItalicType(i)
+					l.state = LineState.Start
+				} else {
+					l.unresolvedTokens = append(l.unresolvedTokens, unresolvedToken{text: '*', start: true})
+
+					if l.textStart != -1 {
+						appendNewToken(l, &Token{Text: string(l.Origin[l.textStart:i]), TokenType: "text"})
+						l.textStart = -1
+					}
+					l.state = LineState.ItalicStart
+				}
+				continue
+			default:
+				// 如果读到非语法字符，则判断是否为第一个，若是第一个，则记录位置。否则继续扫描下一个字符。
+				if l.textStart == -1 {
+					l.textStart = i
+				}
+				continue
+			}
+		}
+		l.ResolveLineToken()
+	}
+}
+
+func (l *Line) DeleteTextParse() {
+	l.state = LineState.Start
+	l.textStart = -1
+	for i := 0; i < len(l.Origin); i++ {
+		ch := l.Origin[i]
+		switch l.state {
+		case LineState.Start:
+			l.unresolvedTokens = []unresolvedToken{}
+			switch ch {
+			case '~':
+
+				// 1. 遇到*之后。需要记录这个*留着判断。
+				l.unresolvedTokens = append(l.unresolvedTokens, unresolvedToken{text: '~', start: true, contentTokenStart: len(l.Tokens)})
+				l.state = LineState.DeletedTextStart
+
+				// 2. 并且还要把*之前的token的text（若有）。
+				if l.textStart != -1 {
+					appendNewToken(l, &Token{Text: string(l.Origin[l.textStart:i]), TokenType: "text"})
+					l.textStart = -1
+					l.unresolvedTokens[len(l.unresolvedTokens)-1].contentTokenStart = len(l.Tokens)
+				}
+
+				continue
+			default:
+				// 如果读到非语法字符，则判断是否为第一个，若是第一个，则记录位置。否则继续扫描下一个字符。
+				if l.textStart == -1 {
+					l.textStart = i
+				}
+				continue
+			}
+		case LineState.DeletedTextStart:
+			switch ch {
+			case '~':
+				if l.textStart == -1 {
+					if len(l.unresolvedTokens) == 2 {
+						l.textStart = i
+						l.state = LineState.DeletedTextEnd
+					} else {
+						l.unresolvedTokens = append(l.unresolvedTokens, unresolvedToken{text: '~', start: true})
+					}
+				}
+				continue
+			default:
+				// 如果读到非语法字符，则判断是否为第一个，若是第一个，则记录位置。否则继续扫描下一个字符。
+				if l.textStart == -1 {
+					if len(l.unresolvedTokens) == 2 {
+						l.textStart = i
+						l.state = LineState.DeletedTextEnd
+					} else {
+						l.textStart = i - 1
+						l.unresolvedTokens = l.unresolvedTokens[:len(l.unresolvedTokens)-1]
+						l.state = LineState.Start
+					}
+				} else {
+					if len(l.unresolvedTokens) == 2 {
+						l.state = LineState.DeletedTextEnd
+					} else {
+						l.unresolvedTokens = l.unresolvedTokens[:len(l.unresolvedTokens)-1]
+						l.state = LineState.Start
+					}
+				}
+				continue
+			}
+		case LineState.DeletedTextEnd:
+			switch ch {
+			case '~':
+				length := len(l.unresolvedTokens)
+				if length > 0 {
+					i = l.confirmDeletedText(i)
+					l.state = LineState.Start
+				} else {
+					l.unresolvedTokens = append(l.unresolvedTokens, unresolvedToken{text: '~', start: true})
+					if l.textStart != -1 {
+						appendNewToken(l, &Token{Text: string(l.Origin[l.textStart:i]), TokenType: "text"})
+						l.textStart = -1
+					}
+					l.state = LineState.DeletedTextStart
+				}
+				continue
+			default:
+				// 如果读到非语法字符，则判断是否为第一个，若是第一个，则记录位置。否则继续扫描下一个字符。
+				if l.textStart == -1 {
+					l.textStart = i
+				}
+				continue
+			}
+		}
+
+	}
+	l.ResolveLineToken()
+	lineText := Line{Origin: []rune(l.Origin), Tokens: []Token{}}
+	lineText.ItalicTextParse()
+}
+
+func (l *Line) ResolveLineToken() {
+	if len(l.unresolvedTokens) > 0 {
+		//l.Tokens = append(l.Tokens, "*")
+		if len(l.Tokens) > 0 && l.Tokens[len(l.Tokens)-1].TokenType == "text" {
+			l.Tokens[len(l.Tokens)-1].Text += joinTokens(l.unresolvedTokens, "")
+			updateTokenHtmlByText(&l.Tokens[len(l.Tokens)-1])
+		} else {
+			appendNewToken(l, &Token{Text: joinTokens(l.unresolvedTokens, ""), TokenType: "text"})
+		}
+	}
+	if l.textStart != -1 {
+		if len(l.Tokens) > 0 && l.Tokens[len(l.Tokens)-1].TokenType == "text" {
+			l.Tokens[len(l.Tokens)-1].Text += string(l.Origin[l.textStart:])
+			updateTokenHtmlByText(&l.Tokens[len(l.Tokens)-1])
+		} else {
+			appendNewToken(l, &Token{Text: string(l.Origin[l.textStart:]), TokenType: "text"})
+		}
+	}
+}
+
+//func ItalicTextParse(originText []rune) {
+//    state := LineState.Start
+//    textStart := -1
+//    var unresolvedTokens []unresolvedToken
+//    var tokens []Token
+//    for i := 0; i < len(originText); i++ {
+//        ch := originText[i]
+//        switch state {
+//        case LineState.Start:
+//            unresolvedTokens = []unresolvedToken{}
+//            switch ch {
+//            case '*':
+//
+//                // 1. 遇到*之后。需要记录这个*留着判断。
+//                ut := unresolvedToken{text: '*', start: true, contentTokenStart: len(tokens)}
+//                unresolvedTokens = append(unresolvedTokens, ut)
+//                state = LineState.ItalicStart
+//
+//                // 2. 并且还要把*之前的token的text（若有）。
+//                if textStart != -1 {
+//                    appendNewToken(l, &Token{Text: string(originText[textStart:i]), TokenType: "text"})
+//                    textStart = -1
+//                    unresolvedTokens[len(unresolvedTokens)-1].contentTokenStart = len(tokens)
+//                }
+//
+//                continue
+//            case '~':
+//
+//                // 1. 遇到*之后。需要记录这个*留着判断。
+//                unresolvedTokens = append(unresolvedTokens, unresolvedToken{text: '~', start: true, contentTokenStart: len(tokens)})
+//                state = LineState.DeletedTextStart
+//
+//                // 2. 并且还要把*之前的token的text（若有）。
+//                if textStart != -1 {
+//                    appendNewToken(l, &Token{Text: string(originText[textStart:i]), TokenType: "text"})
+//                    textStart = -1
+//                    unresolvedTokens[len(unresolvedTokens)-1].contentTokenStart = len(tokens)
+//                }
+//
+//                continue
+//            default:
+//                // 如果读到非语法字符，则判断是否为第一个，若是第一个，则记录位置。否则继续扫描下一个字符。
+//                if textStart == -1 {
+//                    textStart = i
+//                }
+//                continue
+//            }
+//        case LineState.DeletedTextStart:
+//            switch ch {
+//            case '~':
+//                if textStart == -1 {
+//                    if len(unresolvedTokens) == 2 {
+//                        textStart = i
+//                        state = LineState.DeletedTextEnd
+//                    } else {
+//                        unresolvedTokens = append(unresolvedTokens, unresolvedToken{text: '~', start: true})
+//                    }
+//                }
+//                continue
+//            default:
+//                // 如果读到非语法字符，则判断是否为第一个，若是第一个，则记录位置。否则继续扫描下一个字符。
+//                if textStart == -1 {
+//                    if len(unresolvedTokens) == 2 {
+//                        textStart = i
+//                        state = LineState.DeletedTextEnd
+//                    } else {
+//                        textStart = i - 1
+//                        unresolvedTokens = unresolvedTokens[:len(unresolvedTokens)-1]
+//                        state = LineState.Start
+//                    }
+//                } else {
+//                    if len(unresolvedTokens) == 2 {
+//                        state = LineState.DeletedTextEnd
+//                    } else {
+//                        unresolvedTokens = unresolvedTokens[:len(unresolvedTokens)-1]
+//                        state = LineState.Start
+//                    }
+//                }
+//                continue
+//            }
+//        case LineState.DeletedTextEnd:
+//            switch ch {
+//            case '~':
+//                length := len(unresolvedTokens)
+//                if length > 0 {
+//                    i = l.confirmDeletedText(i)
+//                    state = LineState.Start
+//                } else {
+//                    unresolvedTokens = append(unresolvedTokens, unresolvedToken{text: '~', start: true})
+//
+//                    if textStart != -1 {
+//                        appendNewToken(l, &Token{Text: string(originText[textStart:i]), TokenType: "text"})
+//                        textStart = -1
+//                    }
+//                    state = LineState.DeletedTextStart
+//                }
+//                continue
+//            default:
+//                // 如果读到非语法字符，则判断是否为第一个，若是第一个，则记录位置。否则继续扫描下一个字符。
+//                if textStart == -1 {
+//                    textStart = i
+//                }
+//                continue
+//            }
+//        case LineState.ItalicStart:
+//            switch ch {
+//            case '*':
+//                if textStart == -1 {
+//                    unresolvedTokens = append(unresolvedTokens, unresolvedToken{text: '*', start: true})
+//                }
+//                continue
+//            default:
+//                // 如果读到非语法字符，则判断是否为第一个，若是第一个，则记录位置。否则继续扫描下一个字符。
+//                if textStart == -1 {
+//                    textStart = i
+//                    state = LineState.ItalicEnd
+//                }
+//                continue
+//            }
+//        case LineState.ItalicEnd:
+//            switch ch {
+//            case '*':
+//                length := len(unresolvedTokens)
+//                if length > 0 {
+//                    i = l.confirmItalicType(i)
+//                    state = LineState.Start
+//                } else {
+//                    unresolvedTokens = append(unresolvedTokens, unresolvedToken{text: '*', start: true})
+//
+//                    if textStart != -1 {
+//                        appendNewToken(l, &Token{Text: string(originText[textStart:i]), TokenType: "text"})
+//                        textStart = -1
+//                    }
+//                    state = LineState.ItalicStart
+//                }
+//                continue
+//            default:
+//                // 如果读到非语法字符，则判断是否为第一个，若是第一个，则记录位置。否则继续扫描下一个字符。
+//                if textStart == -1 {
+//                    textStart = i
+//                }
+//                continue
+//            }
+//        }
+//
+//    }
+//    if len(unresolvedTokens) > 0 {
+//        //tokens = append(tokens, "*")
+//        if len(tokens) > 0 && tokens[len(tokens)-1].TokenType == "text" {
+//            tokens[len(tokens)-1].Text += joinTokens(unresolvedTokens, "")
+//            updateTokenHtmlByText(&tokens[len(tokens)-1])
+//        } else {
+//            appendNewToken(l, &Token{Text: joinTokens(unresolvedTokens, ""), TokenType: "text"})
+//        }
+//    }
+//    if textStart != -1 {
+//        if len(tokens) > 0 && tokens[len(tokens)-1].TokenType == "text" {
+//            tokens[len(tokens)-1].Text += string(originText[textStart:])
+//            updateTokenHtmlByText(&tokens[len(tokens)-1])
+//        } else {
+//            appendNewToken(l, &Token{Text: string(originText[textStart:]), TokenType: "text"})
+//        }
+//    }
+//}
 
 // 行内判断斜体的具体token的类型的结束函数，token具体是斜体、加粗、粗斜体
 func (l *Line) confirmItalicType(i int) int {
