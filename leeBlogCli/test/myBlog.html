@@ -53,12 +53,12 @@
         xhr.onreadystatechange = function () {
             if (xhr.readyState === 4 && xhr.status === 200) {
                 console.log("发送成功：", JSON.parse(xhr.responseText).data.list);
-                let html = "";
-                let list = JSON.parse(xhr.responseText).data.list;
-                for (let i = 0; i < list.length; i++) {
-                    html += list[i].html;
-                }
-                document.getElementById('result').innerHTML = html
+                // let html = "";
+                // let list = JSON.parse(xhr.responseText).data.list;
+                // for (let i = 0; i < list.length; i++) {
+                //     html += list[i].html;
+                // }
+                document.getElementById('result').innerHTML = JSON.parse(xhr.responseText).data.html
             }
         };
         xhr.send(JSON.stringify({text: document.getElementById('content').value}))

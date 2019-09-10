@@ -52,14 +52,20 @@ func ReadMarkdownText(writer http.ResponseWriter, r *http.Request) {
 
 	// 这种split的方法比bufio那种读取块100-500微秒。
 	list = strings.Split(param.Text, "\n")
-	line := parser.Line{Origin: []rune(list[0]), Tokens: []parser.Token{}}
-	line.Parse()
+	dataList := make([][]parser.Token, len(list))
+	for i := range list {
+		line := parser.Line{Origin: []rune(list[i]), Tokens: []parser.Token{}}
+		line.Parse()
+		dataList[i] = line.Tokens
+	}
 	result.Data = struct {
-		Text string         `json:"text"`
-		List []parser.Token `json:"list"`
+		Text         string           `json:"text"`
+		List         [][]parser.Token `json:"list"`
+		MarkDownHtml string           `json:"html"`
 	}{
-		Text: "success",
-		List: line.Tokens,
+		Text:         "success",
+		List:         dataList,
+		MarkDownHtml: parser.LinesToHtml(dataList),
 	}
 	b, err := json.Marshal(result)
 	if err != nil {
