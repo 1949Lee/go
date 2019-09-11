@@ -6,7 +6,7 @@ import (
 )
 
 // 行内状态类型
-type LineStateType int
+type LineStateType string
 
 // 行内状态枚举
 type LineStateEnum struct {
@@ -24,15 +24,31 @@ type LineStateEnum struct {
 
 	// 删除线~结束
 	DeletedTextEnd LineStateType
+
+	// 链接文案开始
+	LinkTextStart LineStateType
+
+	// 链接文案结束
+	LinkTextEnd LineStateType
+
+	// 链接URL开始
+	LinkHrefStart LineStateType
+
+	// 链接URL结束
+	LinkHrefEnd LineStateType
 }
 
 // 行内状态含义列表
 var LineState = LineStateEnum{
-	Start:            1,
-	ItalicStart:      2,
-	ItalicEnd:        21,
-	DeletedTextStart: 3,
-	DeletedTextEnd:   31,
+	Start:            "1",
+	ItalicStart:      "2",
+	ItalicEnd:        "2-1",
+	DeletedTextStart: "3",
+	DeletedTextEnd:   "3-1",
+	LinkTextStart:    "4",
+	LinkTextEnd:      "4-1",
+	LinkHrefStart:    "4-2",
+	LinkHrefEnd:      "4-3",
 }
 
 // Markdown的每一行
@@ -94,6 +110,9 @@ func updateTokenHtmlByText(t *Token) {
 	case "deleted-text":
 		t.NodeClass = "deleted-text"
 		t.NodeTagName = "span"
+	case "web-link":
+		t.NodeClass = "inline-web-link"
+		t.NodeTagName = "a"
 	}
 }
 
@@ -120,20 +139,35 @@ func LinesToHtml(lines [][]Token) string {
 func lineToHtml(tokens []Token) string {
 	var builder strings.Builder
 	builder.WriteString(`<div class="line">`)
+	builder.WriteString(tokensToHtml(tokens))
+	builder.WriteString(`</div>`)
+	return builder.String()
+}
+
+func tokensToHtml(tokens []Token) string {
+	var builder strings.Builder
 	for i := range tokens {
 		builder.WriteString("<")
 		builder.WriteString(tokens[i].NodeTagName)
 		builder.WriteString(` class="`)
 		builder.WriteString(tokens[i].NodeClass)
 		builder.WriteString(`" `)
+		if len(tokens[i].NodeAttrs) > 0 {
+			for j := range tokens[i].NodeAttrs {
+				builder.WriteString(` `)
+				builder.WriteString(tokens[i].NodeAttrs[j].Key)
+				builder.WriteString(`="`)
+				builder.WriteString(tokens[i].NodeAttrs[j].Value)
+				builder.WriteString(`" `)
+			}
+		}
 		builder.WriteString(">")
 		builder.WriteString(tokens[i].Text)
-		//result += "<"+ l.Tokens[i].NodeTagName +" class="++" >"
+		//result += "<"+ l.t.NodeTagName +" class="++" >"
 		builder.WriteString("</")
 		builder.WriteString(tokens[i].NodeTagName)
 		builder.WriteString(">")
 	}
-	builder.WriteString(`</div>`)
 	return builder.String()
 }
 
@@ -144,7 +178,9 @@ func (l *Line) ToHtml() string {
 
 // 行内转换的解析函数
 func (l *Line) Parse() {
-	l.DeleteTextParse()
+	//l.ItalicTextParse()
+	//l.DeleteTextParse()
+	l.LinkTextParse()
 }
 
 //l.state = LineState.Start
@@ -381,7 +417,7 @@ func (l *Line) ItalicTextParse() {
 			}
 		}
 	}
-	l.ResolveLineToken()
+	l.resolveLineToken()
 }
 
 // 删除线转换方法，会自行调用ItalicTextParse（斜体、粗体、粗斜体转换方法）
@@ -474,9 +510,150 @@ func (l *Line) DeleteTextParse() {
 		}
 
 	}
-	l.ResolveLineToken()
-	l.ParseWithOther(func(line *Line) {
+	l.resolveLineToken()
+	l.parseWithOther(func(line *Line) {
 		line.ItalicTextParse()
+	})
+}
+
+func (l *Line) LinkTextParse() {
+	//linkRegex := regexp.MustCompile(`\[[^]]+]\([^)]+\)`)
+	//links := linkRegex.FindAllStringIndex(string(l.Origin),-1)
+	//fmt.Println(links)
+	l.state = LineState.Start
+	l.textStart = -1
+	tempToken := Token{}
+	l.unresolvedTokens = []unresolvedToken{}
+	for i := 0; i < len(l.Origin); i++ {
+		ch := l.Origin[i]
+		switch l.state {
+		case LineState.Start:
+			switch ch {
+			case '[':
+				// 1. 遇到[之后。需要记录这个[留着判断。
+				l.unresolvedTokens = append(l.unresolvedTokens, unresolvedToken{text: '[', start: true})
+				l.state = LineState.LinkTextEnd
+
+				// 2. 并且还要把[之前的token的text（若有）。
+				if l.textStart != -1 {
+					appendNewToken(l, &Token{Text: string(l.Origin[l.textStart:i]), TokenType: "text"})
+					l.textStart = -1
+				}
+
+				continue
+			default:
+				// 如果读到非语法字符,则记录位置。否则继续扫描下一个字符。textStart == -1表示只记录最开始的位置
+				if l.textStart == -1 {
+					l.textStart = i
+				}
+				continue
+			}
+		case LineState.LinkTextEnd:
+			switch ch {
+			case ']':
+				if len(l.unresolvedTokens) == 1 {
+					// 如果]中有文案，且后面就是(则认为已经进入链接URL判断的状态
+					if l.textStart != -1 && i+1 < len(l.Origin) && l.Origin[i+1] == '(' {
+						tempToken.Text = string(l.Origin[l.textStart:i])
+						tempToken.TokenType = "web-link"
+						l.unresolvedTokens = l.unresolvedTokens[:len(l.unresolvedTokens)-1]
+						l.unresolvedTokens = append(l.unresolvedTokens, unresolvedToken{text: '(', start: true})
+						l.state = LineState.LinkHrefEnd
+						i++
+						l.textStart = -1
+					} else if l.textStart != -1 && i+1 < len(l.Origin) && l.Origin[i+1] != '(' {
+						appendNewToken(l, &Token{Text: "[" + string(l.Origin[l.textStart:i]) + "]", TokenType: "text"})
+						l.state = LineState.Start
+						l.textStart = -1
+						tempToken = Token{}
+						l.unresolvedTokens = []unresolvedToken{}
+						l.textStart = -1
+					} else {
+						// 如果已经读到了行的最后一个字符，则进行一些未完成的token处理
+						if i+1 == len(l.Origin) {
+							if len(l.Tokens) > 0 && l.Tokens[len(l.Tokens)-1].TokenType == "text" {
+								l.Tokens[len(l.Tokens)-1].Text += "[" + string(l.Origin[l.textStart:]) + "]"
+								updateTokenHtmlByText(&l.Tokens[len(l.Tokens)-1])
+							} else {
+								appendNewToken(l, &Token{Text: "[" + string(l.Origin[l.textStart:]) + "]", TokenType: "text"})
+							}
+							l.textStart = -1
+							l.unresolvedTokens = []unresolvedToken{}
+						}
+						l.state = LineState.Start
+						l.textStart = -1
+						tempToken = Token{}
+						l.unresolvedTokens = []unresolvedToken{}
+					}
+				}
+				continue
+			default:
+				// 如果读到非语法字符，则记录位置。否则继续扫描下一个字符。
+				if l.textStart == -1 {
+					l.textStart = i
+				}
+
+				// 如果已经读到了行的最后一个字符，则进行一些未完成的token处理
+				if i+1 == len(l.Origin) {
+					if len(l.Tokens) > 0 && l.Tokens[len(l.Tokens)-1].TokenType == "text" {
+						l.Tokens[len(l.Tokens)-1].Text += "[" + string(l.Origin[l.textStart:])
+						updateTokenHtmlByText(&l.Tokens[len(l.Tokens)-1])
+					} else {
+						appendNewToken(l, &Token{Text: "[" + string(l.Origin[l.textStart:]), TokenType: "text"})
+					}
+					l.textStart = -1
+					l.unresolvedTokens = []unresolvedToken{}
+				}
+				continue
+			}
+		case LineState.LinkHrefEnd:
+			switch ch {
+			case ')':
+				length := len(l.unresolvedTokens)
+				//appendNewToken(l, &Token{Text: string(l.Origin[l.textStart:i]), TokenType: "text"})
+				if length == 1 {
+					if l.textStart != -1 {
+						tempToken.NodeAttrs = []NodeAttr{
+							{Key: "href", Value: string(l.Origin[l.textStart:i])},
+						}
+						appendNewToken(l, &tempToken)
+					} else {
+						var builder strings.Builder
+						builder.WriteString("[")
+						builder.WriteString(tempToken.Text)
+						builder.WriteString("]()")
+						appendNewToken(l, &Token{Text: builder.String(), TokenType: "text"})
+					}
+				}
+				l.state = LineState.Start
+				l.textStart = -1
+				tempToken = Token{}
+				l.unresolvedTokens = []unresolvedToken{}
+				continue
+			default:
+				// 如果读到非语法字符，则记录位置。否则继续扫描下一个字符。
+				if l.textStart == -1 {
+					l.textStart = i
+				}
+				// 如果已经读到了行的最后一个字符，则进行一些未完成的token处理
+				if i+1 == len(l.Origin) {
+					if len(l.Tokens) > 0 && l.Tokens[len(l.Tokens)-1].TokenType == "text" {
+						l.Tokens[len(l.Tokens)-1].Text += "[" + tempToken.Text + "](" + string(l.Origin[l.textStart:])
+						updateTokenHtmlByText(&l.Tokens[len(l.Tokens)-1])
+					} else {
+						appendNewToken(l, &Token{Text: "[" + tempToken.Text + "](" + string(l.Origin[l.textStart:]), TokenType: "text"})
+					}
+					l.textStart = -1
+					l.unresolvedTokens = []unresolvedToken{}
+				}
+				continue
+			}
+		}
+
+	}
+	l.resolveLineToken()
+	l.parseWithOther(func(line *Line) {
+		line.DeleteTextParse()
 	})
 }
 
@@ -586,7 +763,7 @@ func (l *Line) confirmDeletedText(i int) int {
 }
 
 // 遍历完成之后将行进行最后的结尾工作：处理未解决的token、处理未发射为text的字符
-func (l *Line) ResolveLineToken() {
+func (l *Line) resolveLineToken() {
 	if len(l.unresolvedTokens) > 0 {
 		//l.Tokens = append(l.Tokens, "*")
 		if len(l.Tokens) > 0 && l.Tokens[len(l.Tokens)-1].TokenType == "text" {
@@ -607,7 +784,7 @@ func (l *Line) ResolveLineToken() {
 }
 
 // 将当前行的Tokens进行其他Markdown语法的二次转换、转换的方法为参数。转换后，当前行的Tokens将会更新。
-func (l *Line) ParseWithOther(parseFunc func(*Line)) {
+func (l *Line) parseWithOther(parseFunc func(*Line)) {
 	tokens := make([]Token, 0)
 	for i := range l.Tokens {
 		lineText := Line{Origin: []rune(l.Tokens[i].Text), Tokens: []Token{}}
@@ -621,14 +798,19 @@ func (t Token) updateWith(tokens ...Token) []Token {
 	if t.TokenType == "text" {
 		return tokens
 	}
-	for i := range tokens {
-		if tokens[i].NodeClass == "text" {
-			tokens[i].NodeClass = t.NodeClass
-		} else {
-			tokens[i].NodeClass += " " + t.NodeClass
-		}
+	switch t.TokenType {
+	case "deleted-text":
+		for i := range tokens {
+			if tokens[i].NodeClass == "text" {
+				tokens[i].NodeClass = t.NodeClass
+			} else {
+				tokens[i].NodeClass += " " + t.NodeClass
+			}
 
-		// TODO 出了合并类名之外的更新操作
+			// TODO 出了合并类名之外的更新操作
+		}
+	case "web-link":
+		t.Text = tokensToHtml(tokens)
 	}
 	return tokens
 }
