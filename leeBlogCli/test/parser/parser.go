@@ -72,6 +72,7 @@ type Token struct {
 	NodeTagName string     `json:"tagName"`
 	NodeClass   string     `json:"class"`
 	NodeAttrs   []NodeAttr `json:"attrs"`
+	Children    []Token    `json:"children"`
 }
 
 type NodeAttr struct {
@@ -163,6 +164,9 @@ func tokensToHtml(tokens []Token) string {
 		}
 		builder.WriteString(">")
 		builder.WriteString(tokens[i].Text)
+		if len(tokens[i].Children) > 0 {
+			builder.WriteString(tokensToHtml(tokens[i].Children))
+		}
 		//result += "<"+ l.t.NodeTagName +" class="++" >"
 		builder.WriteString("</")
 		builder.WriteString(tokens[i].NodeTagName)
@@ -809,8 +813,11 @@ func (t Token) updateWith(tokens ...Token) []Token {
 
 			// TODO 出了合并类名之外的更新操作
 		}
+		return tokens
 	case "web-link":
-		t.Text = tokensToHtml(tokens)
+		t.Children = tokens
+		t.Text = ""
+		return []Token{t}
 	}
 	return tokens
 }
