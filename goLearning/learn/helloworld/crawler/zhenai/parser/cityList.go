@@ -11,14 +11,9 @@ func CityListParser(body []byte) engine.ParserResult {
 	re := regexp.MustCompile(cityListRegexp)
 	matches := re.FindAllSubmatch(body, -1)
 	result := engine.ParserResult{}
-	limit := 5
 	for _, m := range matches {
 		result.Items = append(result.Items, "City "+string(m[2]))
 		result.Requests = append(result.Requests, engine.Request{Url: string(m[1]), ParserFunc: CityParser})
-		limit--
-		if limit <= 0 {
-			break
-		}
 	}
 	return result
 }

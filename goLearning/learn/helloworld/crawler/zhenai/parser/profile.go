@@ -14,7 +14,9 @@ func ProfileParser(body []byte, name string) engine.ParserResult {
 	str := re.FindSubmatch(body)
 	result := engine.ParserResult{}
 	user := model.Profile{Name: name}
-	user.ID = string(str[1])
+	if len(str) > 1 {
+		user.ID = string(str[1])
+	}
 	result.Items = []interface{}{user}
 	result.Requests = []engine.Request{}
 	return result

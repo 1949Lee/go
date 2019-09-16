@@ -7,6 +7,7 @@ package main
 import (
 	"bufio"
 	"goLearning/learn/helloworld/crawler/engine"
+	"goLearning/learn/helloworld/crawler/scheduler"
 	"goLearning/learn/helloworld/crawler/zhenai/parser"
 	"golang.org/x/net/html/charset"
 	"golang.org/x/text/encoding"
@@ -14,7 +15,12 @@ import (
 
 func main() {
 	url := "http://www.zhenai.com/zhenghun"
-	engine.Run(engine.Request{Url: url, ParserFunc: parser.CityListParser})
+	//engine.SimpleEngine{}.Run(engine.Request{Url: url, ParserFunc: parser.CityListParser})
+	e := engine.ConcurrentEngine{
+		Scheduler:   &scheduler.SimpleScheduler{},
+		WorkerCount: 1000,
+	}
+	e.Run(engine.Request{Url: url, ParserFunc: parser.CityListParser})
 
 }
 
