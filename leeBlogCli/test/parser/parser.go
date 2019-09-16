@@ -36,19 +36,23 @@ type LineStateEnum struct {
 
 	// 链接URL结束
 	LinkHrefEnd LineStateType
+
+	// 链接URL结束
+	BackgroundStrongEnd LineStateType
 }
 
 // 行内状态含义列表
 var LineState = LineStateEnum{
-	Start:            "1",
-	ItalicStart:      "2",
-	ItalicEnd:        "2-1",
-	DeletedTextStart: "3",
-	DeletedTextEnd:   "3-1",
-	LinkTextStart:    "4",
-	LinkTextEnd:      "4-1",
-	LinkHrefStart:    "4-2",
-	LinkHrefEnd:      "4-3",
+	Start:               "1",
+	ItalicStart:         "2",
+	ItalicEnd:           "2-1",
+	DeletedTextStart:    "3",
+	DeletedTextEnd:      "3-1",
+	LinkTextStart:       "4",
+	LinkTextEnd:         "4-1",
+	LinkHrefStart:       "4-2",
+	LinkHrefEnd:         "4-3",
+	BackgroundStrongEnd: "5",
 }
 
 // Markdown的每一行
@@ -114,6 +118,9 @@ func updateTokenHtmlByText(t *Token) {
 	case "web-link":
 		t.NodeClass = "inline-web-link"
 		t.NodeTagName = "a"
+	case "background-strong":
+		t.NodeClass = "inline-background-strong"
+		t.NodeTagName = "span"
 	}
 }
 
@@ -205,7 +212,8 @@ func (l *Line) Parse() {
 	} else {
 		//l.ItalicTextParse()
 		//l.DeleteTextParse()
-		l.LinkTextParse()
+		//l.LinkTextParse()
+		l.BackgroundStrongParse()
 	}
 }
 
@@ -696,6 +704,62 @@ func (l *Line) LinkTextParse() {
 	})
 }
 
+func (l *Line) BackgroundStrongParse() {
+	l.state = LineState.Start
+	l.textStart = -1
+	for i := 0; i < len(l.Origin); i++ {
+		ch := l.Origin[i]
+		if ch == '\\' && i < len(l.Origin)-1 && (l.Origin[i+1] == '`') {
+			l.Origin = append(l.Origin[:i], l.Origin[i+1:]...)
+		}
+		switch l.state {
+		case LineState.Start:
+			l.unresolvedTokens = []unresolvedToken{}
+			switch ch {
+			case '`':
+				l.state = LineState.BackgroundStrongEnd
+
+				// 2. 并且还要把*之前的token的text（若有）。
+				if l.textStart != -1 {
+					appendNewToken(l, &Token{Text: string(l.Origin[l.textStart:i]), TokenType: "text"})
+					l.textStart = -1
+				}
+
+				continue
+			default:
+				// 如果读到非语法字符，则判断是否为第一个，若是第一个，则记录位置。否则继续扫描下一个字符。
+				if l.textStart == -1 {
+					l.textStart = i
+				}
+				continue
+			}
+		case LineState.BackgroundStrongEnd:
+			switch ch {
+			case '`':
+				if l.textStart != -1 {
+					text := string(l.Origin[l.textStart:i])
+					appendNewToken(l, &Token{Text: text, TokenType: "background-strong"})
+					l.state = LineState.Start
+					l.unresolvedTokens = []unresolvedToken{}
+					l.textStart = -1
+				}
+				continue
+			default:
+				// 如果读到非语法字符，则判断是否为第一个，若是第一个，则记录位置。否则继续扫描下一个字符。
+				if l.textStart == -1 {
+					l.textStart = i
+				}
+				continue
+			}
+		}
+
+	}
+	l.resolveLineToken()
+	l.parseWithOther(func(line *Line) {
+		line.LinkTextParse()
+	})
+}
+
 // 行内判断斜体的具体token的类型的结束函数，token具体是斜体、加粗、粗斜体
 func (l *Line) confirmItalicType(i int) int {
 	// 保留初始流的读取位置下标
@@ -837,6 +901,7 @@ func (t Token) updateWith(tokens ...Token) []Token {
 	if t.TokenType == "text" {
 		return tokens
 	}
+	// TODO 完善更新方式，Tokens只有一个，且NodeTagName一样时。类名可以叠加。否则，采用children的方式更新
 	switch t.TokenType {
 	case "deleted-text":
 		for i := range tokens {
@@ -846,10 +911,14 @@ func (t Token) updateWith(tokens ...Token) []Token {
 				tokens[i].NodeClass += " " + t.NodeClass
 			}
 
-			// TODO 出了合并类名之外的更新操作
+			// TODO 除了合并类名之外的更新操作
 		}
 		return tokens
 	case "web-link":
+		t.Children = tokens
+		t.Text = ""
+		return []Token{t}
+	case "background-strong":
 		t.Children = tokens
 		t.Text = ""
 		return []Token{t}
