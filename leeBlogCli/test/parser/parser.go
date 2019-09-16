@@ -520,6 +520,7 @@ func (l *Line) DeleteTextParse() {
 	})
 }
 
+// 链接转换方法，会自行调用DeleteTextParse
 func (l *Line) LinkTextParse() {
 	//linkRegex := regexp.MustCompile(`\[[^]]+]\([^)]+\)`)
 	//links := linkRegex.FindAllStringIndex(string(l.Origin),-1)
