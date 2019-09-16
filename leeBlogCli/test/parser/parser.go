@@ -354,6 +354,9 @@ func (l *Line) ItalicTextParse() {
 	l.textStart = -1
 	for i := 0; i < len(l.Origin); i++ {
 		ch := l.Origin[i]
+		if ch == '\\' && i < len(l.Origin)-1 && (l.Origin[i+1] == '*') {
+			l.Origin = append(l.Origin[:i], l.Origin[i+1:]...)
+		}
 		switch l.state {
 		case LineState.Start:
 			l.unresolvedTokens = []unresolvedToken{}
@@ -430,6 +433,9 @@ func (l *Line) DeleteTextParse() {
 	l.textStart = -1
 	for i := 0; i < len(l.Origin); i++ {
 		ch := l.Origin[i]
+		if ch == '\\' && i < len(l.Origin)-1 && (l.Origin[i+1] == '~') {
+			l.Origin = append(l.Origin[:i], l.Origin[i+1:]...)
+		}
 		switch l.state {
 		case LineState.Start:
 			l.unresolvedTokens = []unresolvedToken{}
@@ -531,6 +537,12 @@ func (l *Line) LinkTextParse() {
 	l.unresolvedTokens = []unresolvedToken{}
 	for i := 0; i < len(l.Origin); i++ {
 		ch := l.Origin[i]
+		if ch == '\\' && i < len(l.Origin)-1 && (l.Origin[i+1] == '[' ||
+			l.Origin[i+1] == ']' ||
+			l.Origin[i+1] == ')' ||
+			l.Origin[i+1] == '(') {
+			l.Origin = append(l.Origin[:i], l.Origin[i+1:]...)
+		}
 		switch l.state {
 		case LineState.Start:
 			switch ch {
