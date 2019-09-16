@@ -148,29 +148,47 @@ func lineToHtml(tokens []Token) string {
 func tokensToHtml(tokens []Token) string {
 	var builder strings.Builder
 	for i := range tokens {
-		builder.WriteString("<")
-		builder.WriteString(tokens[i].NodeTagName)
-		builder.WriteString(` class="`)
-		builder.WriteString(tokens[i].NodeClass)
-		builder.WriteString(`" `)
-		if len(tokens[i].NodeAttrs) > 0 {
-			for j := range tokens[i].NodeAttrs {
-				builder.WriteString(` `)
-				builder.WriteString(tokens[i].NodeAttrs[j].Key)
-				builder.WriteString(`="`)
-				builder.WriteString(tokens[i].NodeAttrs[j].Value)
-				builder.WriteString(`" `)
+		if tokens[i].TokenType == "empty-line" {
+			builder.WriteString("<")
+			builder.WriteString(tokens[i].NodeTagName)
+			builder.WriteString(` class="`)
+			builder.WriteString(tokens[i].NodeClass)
+			builder.WriteString(`" `)
+			if len(tokens[i].NodeAttrs) > 0 {
+				for j := range tokens[i].NodeAttrs {
+					builder.WriteString(` `)
+					builder.WriteString(tokens[i].NodeAttrs[j].Key)
+					builder.WriteString(`="`)
+					builder.WriteString(tokens[i].NodeAttrs[j].Value)
+					builder.WriteString(`" `)
+				}
 			}
+			builder.WriteString("/>")
+		} else {
+			builder.WriteString("<")
+			builder.WriteString(tokens[i].NodeTagName)
+			builder.WriteString(` class="`)
+			builder.WriteString(tokens[i].NodeClass)
+			builder.WriteString(`" `)
+			if len(tokens[i].NodeAttrs) > 0 {
+				for j := range tokens[i].NodeAttrs {
+					builder.WriteString(` `)
+					builder.WriteString(tokens[i].NodeAttrs[j].Key)
+					builder.WriteString(`="`)
+					builder.WriteString(tokens[i].NodeAttrs[j].Value)
+					builder.WriteString(`" `)
+				}
+			}
+			builder.WriteString(">")
+			builder.WriteString(tokens[i].Text)
+			if len(tokens[i].Children) > 0 {
+				builder.WriteString(tokensToHtml(tokens[i].Children))
+			}
+			//result += "<"+ l.t.NodeTagName +" class="++" >"
+			builder.WriteString("</")
+			builder.WriteString(tokens[i].NodeTagName)
+			builder.WriteString(">")
 		}
-		builder.WriteString(">")
-		builder.WriteString(tokens[i].Text)
-		if len(tokens[i].Children) > 0 {
-			builder.WriteString(tokensToHtml(tokens[i].Children))
-		}
-		//result += "<"+ l.t.NodeTagName +" class="++" >"
-		builder.WriteString("</")
-		builder.WriteString(tokens[i].NodeTagName)
-		builder.WriteString(">")
 	}
 	return builder.String()
 }
@@ -182,9 +200,13 @@ func (l *Line) ToHtml() string {
 
 // 行内转换的解析函数
 func (l *Line) Parse() {
-	//l.ItalicTextParse()
-	//l.DeleteTextParse()
-	l.LinkTextParse()
+	if len(l.Origin) == 0 {
+		l.Tokens = append(l.Tokens, Token{TokenType: "empty-line", NodeTagName: "br", NodeClass: "empty-line"})
+	} else {
+		//l.ItalicTextParse()
+		//l.DeleteTextParse()
+		l.LinkTextParse()
+	}
 }
 
 //l.state = LineState.Start
