@@ -914,11 +914,7 @@ func (t Token) updateWith(tokens ...Token) []Token {
 			// TODO 除了合并类名之外的更新操作
 		}
 		return tokens
-	case "web-link":
-		t.Children = tokens
-		t.Text = ""
-		return []Token{t}
-	case "background-strong":
+	case "web-link", "background-strong":
 		t.Children = tokens
 		t.Text = ""
 		return []Token{t}
