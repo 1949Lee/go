@@ -17,7 +17,8 @@ func main() {
 	url := "http://www.zhenai.com/zhenghun"
 	//engine.SimpleEngine{}.Run(engine.Request{Url: url, ParserFunc: parser.CityListParser})
 	e := engine.ConcurrentEngine{
-		Scheduler:   &scheduler.SimpleScheduler{},
+		//Scheduler:   &scheduler.SimpleScheduler{},
+		Scheduler:   &scheduler.QueuedScheduler{},
 		WorkerCount: 1000,
 	}
 	e.Run(engine.Request{Url: url, ParserFunc: parser.CityListParser})

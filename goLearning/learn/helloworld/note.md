@@ -169,3 +169,46 @@ http.Client可以构造一个客户端，然后通过client.Do(req)的方式来�
 ### 爬虫实战部分中可以记录的内容。
 1. 获取URL网页之后根据不同的编码格式（gbk等）统一为utf8编码格式：详见crwaler/main.go中`determineEncoding`方法
 2. golang中的[jQuery](https://github.com/PuerkitoBio/goquery)。
+
+### pprof+wrk测试爬虫实战部分性能
+
+1. 自动发送请求，使用工具wrk
+	wrk -t1 -c1 -d30s --script=wrkPost.lua http://127.0.0.1:1314
+2. 监听cpu使用情况，使用go自带的pprof。命令执行后会监听一段时间（默认30s）内
+的端口使用情况。可以手点，也可以用步骤1的工具	go tool pprof http://127.0.0.1:1314/debug/pprof/profile
+输入help可查看具体命令如下：
+Commands:
+    + callgrind        Outputs a graph in callgrind format
+    + comments         Output all profile comments
+    + disasm           Output assembly listings annotated with samples
+    + dot              Outputs a graph in DOT format
+    + eog              Visualize graph through eog
+    + evince           Visualize graph through evince
+    + gif              Outputs a graph image in GIF format
+    + gv               Visualize graph through gv
+    + kcachegrind      Visualize report in KCachegrind
+    + list             Output annotated source for functions matching regexp
+    + pdf              Outputs a graph in PDF format
+    + peek             Output callers/callees of functions matching regexp
+    + png              Outputs a graph image in PNG format
+    + proto            Outputs the profile in compressed protobuf format
+    + ps               Outputs a graph in PS format
+    + raw              Outputs a text representation of the raw profile
+    + svg              Outputs a graph in SVG format
+    + tags             Outputs all tags in the profile
+    + text             Outputs top entries in text form
+    + top              Outputs top entries in text form
+    + topproto         Outputs top entries in compressed protobuf format
+    + traces           Outputs all profile samples in text form
+    + tree             Outputs a text rendering of call graph
+    + web              Visualize graph through web browser
+    + weblist          Display annotated source in a web browser
+    + o/options        List options and their current values
+    + quit/exit/^D     Exit pprof
+
+
+
+
+3. 输入proto后回车。会在当前目录下生成监听的一个结果（一个压缩文件）
+4. 利用刚刚生成的压缩文件，可以在线查看：
+	go tool pprof -http=:8080 profile001.pb.gz
