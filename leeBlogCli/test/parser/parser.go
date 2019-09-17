@@ -2,6 +2,7 @@ package parser
 
 import (
 	"bytes"
+	"strconv"
 	"strings"
 )
 
@@ -121,6 +122,8 @@ func updateTokenHtmlByText(t *Token) {
 	case "background-strong":
 		t.NodeClass = "inline-background-strong"
 		t.NodeTagName = "span"
+	case "header":
+		t.NodeClass = "header-" + t.NodeTagName
 	}
 }
 
@@ -213,7 +216,8 @@ func (l *Line) Parse() {
 		//l.ItalicTextParse()
 		//l.DeleteTextParse()
 		//l.LinkTextParse()
-		l.BackgroundStrongParse()
+		//l.BackgroundStrongParse()
+		l.HeaderTitleParse()
 	}
 }
 
@@ -704,6 +708,7 @@ func (l *Line) LinkTextParse() {
 	})
 }
 
+//行内底色变色强调的转换方法，会自行调用LinkTextParse
 func (l *Line) BackgroundStrongParse() {
 	l.state = LineState.Start
 	l.textStart = -1
@@ -758,6 +763,49 @@ func (l *Line) BackgroundStrongParse() {
 	l.parseWithOther(func(line *Line) {
 		line.LinkTextParse()
 	})
+}
+
+//多级标题转换方法，会自行调用BackgroundStrongParse
+func (l *Line) HeaderTitleParse() {
+	l.state = LineState.Start
+	l.textStart = -1
+	//如果行开头是#号，则进行多级标题判断。
+	if l.Origin[0] == '#' {
+		inHeader := true
+		headerLevel := 0
+		for i := 0; i < len(l.Origin); i++ {
+			ch := l.Origin[i]
+			if inHeader && ch == '#' {
+				headerLevel++
+			} else {
+				if inHeader {
+					inHeader = false
+					if ch == ' ' { // 连续#号之后，必须跟一个空格。
+						l.textStart = i + 1
+					} else { // 连续#号之后，若没有跟空格，则直接进行其他转换。
+						l.BackgroundStrongParse()
+						return
+					}
+				}
+				if ch == '\\' && i < len(l.Origin)-1 && (l.Origin[i+1] == '#') {
+					l.Origin = append(l.Origin[:i], l.Origin[i+1:]...)
+				}
+			}
+		}
+		appendNewToken(l, &Token{Text: string(l.Origin[l.textStart:]), NodeTagName: "h" + strconv.Itoa(headerLevel), TokenType: "header"})
+		l.parseWithOther(func(line *Line) {
+			line.BackgroundStrongParse()
+		})
+	} else { // 行开头不是#，直接进行其他转换
+		for i := 0; i < len(l.Origin); i++ {
+			ch := l.Origin[i]
+			if ch == '\\' && i < len(l.Origin)-1 && (l.Origin[i+1] == '#') {
+				l.Origin = append(l.Origin[:i], l.Origin[i+1:]...)
+			}
+		}
+		l.BackgroundStrongParse()
+	}
+
 }
 
 // 行内判断斜体的具体token的类型的结束函数，token具体是斜体、加粗、粗斜体
@@ -901,7 +949,17 @@ func (t Token) updateWith(tokens ...Token) []Token {
 	if t.TokenType == "text" {
 		return tokens
 	}
-	// TODO 完善更新方式，Tokens只有一个，且NodeTagName一样时。类名可以叠加。否则，采用children的方式更新
+	if len(tokens) == 1 && t.NodeTagName == tokens[0].NodeTagName {
+		if tokens[0].NodeClass == "text" {
+			tokens[0].NodeClass = t.NodeClass
+		} else {
+			tokens[0].NodeClass += " " + t.NodeClass
+		}
+		if len(t.NodeAttrs) > 0 {
+			tokens[0].NodeAttrs = append(tokens[0].NodeAttrs, t.NodeAttrs...)
+		}
+		return tokens
+	}
 	switch t.TokenType {
 	case "deleted-text":
 		for i := range tokens {
@@ -910,11 +968,12 @@ func (t Token) updateWith(tokens ...Token) []Token {
 			} else {
 				tokens[i].NodeClass += " " + t.NodeClass
 			}
-
-			// TODO 除了合并类名之外的更新操作
+			if len(t.NodeAttrs) > 0 {
+				tokens[i].NodeAttrs = append(tokens[i].NodeAttrs, t.NodeAttrs...)
+			}
 		}
 		return tokens
-	case "web-link", "background-strong":
+	case "web-link", "background-strong", "header":
 		t.Children = tokens
 		t.Text = ""
 		return []Token{t}
