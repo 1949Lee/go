@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"leeBlogCli/test/parser"
 	"net/http"
-	"strings"
 	"time"
 )
 
@@ -44,20 +43,8 @@ func ReadMarkdownText(writer http.ResponseWriter, r *http.Request) {
 		writer.Write([]byte("error params"))
 	}
 	result.Code = 0
-	var list []string
-	//scanner := bufio.NewScanner(strings.NewReader(param.Text))
-	//for scanner.Scan() {
-	//	list = append(list, scanner.Text())
-	//}
 
-	// 这种split的方法比bufio那种读取块100-500微秒。
-	list = strings.Split(param.Text, "\n")
-	dataList := make([][]parser.Token, len(list))
-	for i := range list {
-		line := parser.Line{Origin: []rune(list[i]), Tokens: []parser.Token{}}
-		line.Parse()
-		dataList[i] = line.Tokens
-	}
+	dataList, html := parser.MarkdownParse(param.Text)
 	result.Data = struct {
 		Text         string           `json:"text"`
 		List         [][]parser.Token `json:"list"`
@@ -65,7 +52,7 @@ func ReadMarkdownText(writer http.ResponseWriter, r *http.Request) {
 	}{
 		Text:         "success",
 		List:         dataList,
-		MarkDownHtml: parser.LinesToHtml(dataList),
+		MarkDownHtml: html,
 	}
 	b, err := json.Marshal(result)
 	if err != nil {
