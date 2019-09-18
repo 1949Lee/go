@@ -172,6 +172,11 @@ http.Client可以构造一个客户端，然后通过client.Do(req)的方式来�
 ### 爬虫实战部分中可以记录的内容。
 1. 获取URL网页之后根据不同的编码格式（gbk等）统一为utf8编码格式：详见crwaler/main.go中`determineEncoding`方法
 2. golang中的[jQuery](https://github.com/PuerkitoBio/goquery)。
+3. URL实现去重，即当要爬取新的URL的时候，如何确定这个URL已经被爬取过了。需要将爬取过的URL存储下来，然后新的URL去存储里比对，看看有没有爬取过。所以存储的方式有：
+    + 哈希表(go中的map)
+    + 计算MD5等值哈希，再存哈希表
+    + 使用bloom filter多重哈希结构
+    + 使用redis等key-value存储系统实现分布式去重
 
 ### pprof+wrk测试爬虫实战部分性能
 
