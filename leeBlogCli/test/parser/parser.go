@@ -1,7 +1,6 @@
 package parser
 
 import (
-	"bufio"
 	"bytes"
 	"strconv"
 	"strings"
@@ -878,7 +877,12 @@ func handleBlockForLines(line Line, index int) {
 	//}
 }
 
-func isInBlock(lineText string) bool {
+type BlockResult struct {
+	TokenType   string
+	IndentCount int
+}
+
+func isInBlock(lineText string) (bool, BlockResult) {
 	//origin := []rune(lineText)
 	identCount := 0
 	realRune := []rune(strings.TrimLeftFunc(lineText, func(r rune) bool {
@@ -890,41 +894,61 @@ func isInBlock(lineText string) bool {
 	switch realRune[0] {
 	case '*', '-': // 无序列表list
 		if realRune[1] == ' ' {
-
+			return true, BlockResult{TokenType: "list", IndentCount: identCount}
 		}
-	case '>': // 颜色块colored-block或文字引用block-quote
-		if realRune[1] == ' ' {
-
+	case '>': // 颜色块colored-block或文字引用block-quote，需要进一步判断
+		if realRune[1] == '>' && realRune[2] == '>' {
+			return true, BlockResult{TokenType: "colored-block"}
+		} else {
+			return true, BlockResult{TokenType: "block-quote"}
 		}
 	case '|': // 表格table
+	// TODO 表格转换待实现，这里需要做判断是否是表格
 	case '`': // 代码块code-block，需要进一步判断
+		if realRune[1] == '`' && realRune[2] == '`' {
+			return true, BlockResult{TokenType: "code-block"}
+		}
 	case '+': // 自动有序列表auto-order-list
 		if realRune[1] == ' ' {
-
+			return true, BlockResult{TokenType: "auto-order-list", IndentCount: identCount}
 		}
 	case ':': // 名词定义列表word-list，需要进一步判断
+		if realRune[1] == ':' {
+			return true, BlockResult{TokenType: "word-list"}
+		}
 	}
-	return true
+	return false, BlockResult{}
 }
 
 // 接受markdown字符串，并将之转化为html
 func MarkdownParse(markdownText string) ([][]Token, string) {
-	scanner := bufio.NewScanner(strings.NewReader(markdownText))
-	dataList := make([][]Token, 0)
-	for scanner.Scan() {
-		lineText := scanner.Text()
-		line := Line{Origin: []rune(lineText), Tokens: []Token{}}
-		line.LineParse()
-		dataList = append(dataList, line.Tokens)
-	}
-
-	////这种split的方法比bufio那种读取块100-500微秒。
-	//list := strings.Split(markdownText, "\n")
-	//dataList := make([][]Token, len(list))
-	//for  i := 0; i < len(list); i++ {
-	//	line := Line{Origin: []rune(list[i]), Tokens: []Token{}}
+	//scanner := bufio.NewScanner(strings.NewReader(markdownText))
+	//dataList := make([][]Token, 0)
+	//for scanner.Scan() {
+	//	lineText := scanner.Text()
+	//	line := Line{Origin: []rune(lineText), Tokens: []Token{}}
 	//	line.LineParse()
-	//	dataList[i] = line.Tokens
+	//	dataList = append(dataList, line.Tokens)
 	//}
+
+	//这种split的方法比bufio那种读取块100-500微秒。
+	list := strings.Split(markdownText, "\n")
+	dataList := make([][]Token, len(list))
+	for i := 0; i < len(list); i++ {
+		if ok, blockResult := isInBlock(list[i]); ok {
+			switch blockResult.TokenType {
+			case "list":
+				listParse(&list, i, blockResult)
+			}
+		} else {
+			line := Line{Origin: []rune(list[i]), Tokens: []Token{}}
+			line.LineParse()
+			dataList[i] = line.Tokens
+		}
+	}
 	return [][]Token{}, LinesToHtml(dataList)
+}
+
+func listParse(lines *[]string, index int, blockResult BlockResult) {
+
 }
