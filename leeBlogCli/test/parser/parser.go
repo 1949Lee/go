@@ -882,19 +882,24 @@ type BlockResult struct {
 	IndentCount int
 }
 
-func isInBlock(lineText string) (bool, BlockResult) {
-	//origin := []rune(lineText)
-	identCount := 0
-	realRune := []rune(strings.TrimLeftFunc(lineText, func(r rune) bool {
+func getIndentCount(lineText string) (int, string) {
+	indentCount := 0
+	realStr := strings.TrimLeftFunc(lineText, func(r rune) bool {
 		if r == ' ' {
-			identCount++
+			indentCount++
 		}
 		return r == ' '
-	}))
+	})
+	return indentCount, realStr
+}
+
+func isInBlock(lineText string) (bool, BlockResult) {
+	//origin := []rune(lineText)
+	indentCount, realRune := getIndentCount(lineText)
 	switch realRune[0] {
 	case '*', '-': // 无序列表list
 		if realRune[1] == ' ' {
-			return true, BlockResult{TokenType: "list", IndentCount: identCount}
+			return true, BlockResult{TokenType: "list", IndentCount: indentCount}
 		}
 	case '>': // 颜色块colored-block或文字引用block-quote，需要进一步判断
 		if realRune[1] == '>' && realRune[2] == '>' {
@@ -910,7 +915,7 @@ func isInBlock(lineText string) (bool, BlockResult) {
 		}
 	case '+': // 自动有序列表auto-order-list
 		if realRune[1] == ' ' {
-			return true, BlockResult{TokenType: "auto-order-list", IndentCount: identCount}
+			return true, BlockResult{TokenType: "auto-order-list", IndentCount: indentCount}
 		}
 	case ':': // 名词定义列表word-list，需要进一步判断
 		if realRune[1] == ':' {
@@ -933,22 +938,49 @@ func MarkdownParse(markdownText string) ([][]Token, string) {
 
 	//这种split的方法比bufio那种读取块100-500微秒。
 	list := strings.Split(markdownText, "\n")
-	dataList := make([][]Token, len(list))
+	dataList := make([][]Token, 0)
 	for i := 0; i < len(list); i++ {
 		if ok, blockResult := isInBlock(list[i]); ok {
 			switch blockResult.TokenType {
 			case "list":
-				listParse(&list, i, blockResult)
+				var tokens []Token
+				i, tokens = listParse(list[i:], i, blockResult)
+				dataList = append(dataList, tokens)
 			}
 		} else {
 			line := Line{Origin: []rune(list[i]), Tokens: []Token{}}
 			line.LineParse()
-			dataList[i] = line.Tokens
+			dataList = append(dataList, line.Tokens)
 		}
 	}
 	return [][]Token{}, LinesToHtml(dataList)
 }
 
-func listParse(lines *[]string, index int, blockResult BlockResult) {
-
+func listParse(lines []string, index int, blockResult BlockResult) (int, []Token) {
+	tokens := []Token{
+		{
+			TokenType:   "list",
+			NodeTagName: "ul",
+			NodeClass:   "list",
+			Children: []Token{
+				{
+					TokenType:   "list-item",
+					NodeTagName: "li",
+					NodeClass:   "list-item",
+					Children:    []Token{},
+				},
+			},
+		}}
+	for i := 0; i < len(lines); i++ {
+		if i != 0 {
+			//ok, temResult := isInBlock(lines[i])
+			//if ok
+		} else {
+			text := []rune(lines[i])[1+blockResult.IndentCount:]
+			line := Line{Origin: text, Tokens: []Token{}}
+			line.LineParse()
+			tokens[0].Children[0].Children = line.Tokens
+		}
+	}
+	return index, tokens
 }
