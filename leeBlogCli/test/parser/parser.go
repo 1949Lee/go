@@ -893,6 +893,7 @@ func getIndentCount(lineText string) (int, string) {
 	return indentCount, realStr
 }
 
+// 判断某一行的内容是否为块开头
 func isInBlock(lineText string) (bool, BlockResult) {
 	//origin := []rune(lineText)
 	indentCount, realRune := getIndentCount(lineText)
@@ -923,6 +924,18 @@ func isInBlock(lineText string) (bool, BlockResult) {
 		}
 	}
 	return false, BlockResult{}
+}
+
+// 判断某一行的内容是否为属于无序列表list的一部分
+func isInList(lineText string) (bool, BlockResult) {
+    indentCount, realRune := getIndentCount(lineText)
+    switch realRune[0] {
+    case '*', '-': // 无序列表list
+        if realRune[1] == ' ' {
+            return true, BlockResult{TokenType: "list", IndentCount:indentCount}
+        }
+    }
+    return false, BlockResult{}
 }
 
 // 接受markdown字符串，并将之转化为html
@@ -962,20 +975,27 @@ func listParse(lines []string, index int, blockResult BlockResult) (int, []Token
 			TokenType:   "list",
 			NodeTagName: "ul",
 			NodeClass:   "list",
-			Children: []Token{
-				{
-					TokenType:   "list-item",
-					NodeTagName: "li",
-					NodeClass:   "list-item",
-					Children:    []Token{},
-				},
-			},
+			Children: []Token{},
 		}}
+	originIndent := blockResult.IndentCount
 	for i := 0; i < len(lines); i++ {
 		if i != 0 {
-			//ok, temResult := isInBlock(lines[i])
-			//if ok
+			ok, temResult := isInList(lines[i])
+			if ok { // list的新一行
+                if temResult.IndentCount == originIndent { // 新的列表项不是子列表
+
+                } else if temResult.IndentCount > 0 && temResult.IndentCount > originIndent + 4 {  //
+
+                }
+            } else { // list结束
+            }
 		} else {
+            tokens[0].Children = append(tokens[0].Children, Token{
+                TokenType:   "list-item",
+                NodeTagName: "li",
+                NodeClass:   "list-item",
+                Children:    []Token{},
+            })
 			text := []rune(lines[i])[1+blockResult.IndentCount:]
 			line := Line{Origin: text, Tokens: []Token{}}
 			line.LineParse()
