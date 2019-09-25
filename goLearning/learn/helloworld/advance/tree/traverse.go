@@ -33,7 +33,9 @@ func (node *Node) TraverseByChannel() chan *Node {
 	return out
 }
 
-// 非递归的方式求树的深度，广度优先遍历tree
+/* 非递归的方式求树的深度，广度优先遍历tree。
+LeetCode的题，求树的最大深度：https://leetcode-cn.com/problems/maximum-depth-of-binary-tree/submissions/
+*/
 func (node *Node) MaxDepth() int {
 	depth := 0
 	queue := make([]*Node, 0)
@@ -41,10 +43,14 @@ func (node *Node) MaxDepth() int {
 		queue = append(queue, node)
 	}
 
+	// 每次取出队列中的全部，将取出节点的子节点加入队列（即下一层所有节点）
 	for len(queue) > 0 {
 		depth++
 		length := len(queue)
+		// 一次性取出队列中的全部，这些都是同一层的兄弟节点。
 		for i := 0; i < length; i++ {
+
+			// 这一层的每个节点都要将该节点的所有子节点（即下一层所有节点）加入队列。
 			if queue[i].Left != nil {
 				queue = append(queue, queue[i].Left)
 			}
@@ -52,7 +58,33 @@ func (node *Node) MaxDepth() int {
 				queue = append(queue, queue[i].Right)
 			}
 		}
+		// 弹出本层所有节点的操作（留下剩余节点）
 		queue = queue[length:]
 	}
 	return depth
 }
+
+//func maxDepth(root *TreeNode) int {
+//	depth := 0
+//	stack := make([]*TreeNode,0)
+//	if root != nil {
+//		stack = append(stack, root)
+//	}
+//
+//	for len(stack) > 0 {
+//		top := stack[len(stack) - 1]
+//		if top.Left != nil {
+//			stack = append(stack,top.Left)
+//			continue
+//		}
+//		if top.Right != nil {
+//			stack = append(stack,top.Right)
+//			continue
+//		}
+//		if depth < len(stack) {
+//			depth = len(stack)
+//		}
+//		stack = stack[:len(stack) - 1]
+//	}
+//	return depth
+//}
