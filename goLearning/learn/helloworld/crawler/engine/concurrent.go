@@ -1,10 +1,9 @@
 package engine
 
-import "log"
-
 type ConcurrentEngine struct {
 	Scheduler   Scheduler
 	WorkerCount int
+	ItemSaver   chan interface{}
 }
 
 type Scheduler interface {
@@ -30,14 +29,15 @@ func (e *ConcurrentEngine) Run(seeds ...Request) {
 		e.Scheduler.Submit(r)
 	}
 
-	itemCount := 0
+	//itemCount := 0
 	for {
 		result := <-out
 
 		// 打印从out的channel中收到的结果
 		for _, item := range result.Items {
-			itemCount++
-			log.Printf("Got item #%d %v", itemCount, item)
+			//itemCount++
+			//log.Printf("Got item #%d %v", itemCount, item)
+			go func(item interface{}) { e.ItemSaver <- item }(item)
 		}
 
 		for _, r := range result.Requests {

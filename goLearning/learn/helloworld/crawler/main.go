@@ -7,6 +7,7 @@ package main
 import (
 	"bufio"
 	"goLearning/learn/helloworld/crawler/engine"
+	"goLearning/learn/helloworld/crawler/saver"
 	"goLearning/learn/helloworld/crawler/scheduler"
 	"goLearning/learn/helloworld/crawler/zhenai/parser"
 	"golang.org/x/net/html/charset"
@@ -20,6 +21,7 @@ func main() {
 		//Scheduler:   &scheduler.SimpleScheduler{},
 		Scheduler:   &scheduler.QueuedScheduler{},
 		WorkerCount: 1000,
+		ItemSaver:   saver.ItemSaver(),
 	}
 	e.Run(engine.Request{Url: url, ParserFunc: parser.CityListParser})
 

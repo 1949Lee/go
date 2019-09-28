@@ -217,6 +217,19 @@ Commands:
 
 
 
-3. 输入proto后回车。会在当前目录下生成监听的一个结果（一个压缩文件）
+3. 输入proto后回车。会在当前目录下生成监听的一个结果（一压缩文件）
 4. 利用刚刚生成的压缩文件，可以在线查看：
 	go tool pprof -http=:8080 profile001.pb.gz
+	
+	
+### ElasticSearch 初识
++ <server>:9200/index/type/id
+ <br>index相当于关系型数据库中的database
+ type相当于关系型数据库中的表
++ 不需要预先创建
++ type中数据类型可以不一致
++ 可以使用_mapping来配置类型
++ 使用REST接口
++ 使用put或post创建或修改数据，使用post可以省略id
++ 用get获取各种数据。
++ Get <index>/<type>/_search?q=全文搜索关键。来全文搜索
