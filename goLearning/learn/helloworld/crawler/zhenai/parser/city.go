@@ -2,17 +2,18 @@ package parser
 
 import (
 	"goLearning/learn/helloworld/crawler/engine"
+	"goLearning/learn/helloworld/crawler/model"
 	"regexp"
 )
 
-const cityRegexp string = `<a href="(http://album.zhenai.com/u/[0-9]+)"[^>]*>([^<]+)</a>`
+const cityRegexp string = `<a href="(http://album.zhenai.com/u/([0-9]+))"[^>]*>([^<]+)</a>`
 
 func CityParser(body []byte) engine.ParserResult {
 	re := regexp.MustCompile(cityRegexp)
 	matches := re.FindAllSubmatch(body, -1)
 	result := engine.ParserResult{}
 	for _, m := range matches {
-		result.Items = append(result.Items, "User "+string(m[2]))
+		result.Items = append(result.Items, model.Profile{Name: string(m[3]), ID: string(m[2])})
 
 		//name := string(m[2])
 		//func(m [][]byte) {
