@@ -928,14 +928,14 @@ func isInBlock(lineText string) (bool, BlockResult) {
 
 // 判断某一行的内容是否为属于无序列表list的一部分
 func isInList(lineText string) (bool, BlockResult) {
-    indentCount, realRune := getIndentCount(lineText)
-    switch realRune[0] {
-    case '*', '-': // 无序列表list
-        if realRune[1] == ' ' {
-            return true, BlockResult{TokenType: "list", IndentCount:indentCount}
-        }
-    }
-    return false, BlockResult{}
+	indentCount, realRune := getIndentCount(lineText)
+	switch realRune[0] {
+	case '*', '-': // 无序列表list
+		if realRune[1] == ' ' {
+			return true, BlockResult{TokenType: "list", IndentCount: indentCount}
+		}
+	}
+	return false, BlockResult{}
 }
 
 // 接受markdown字符串，并将之转化为html
@@ -958,6 +958,7 @@ func MarkdownParse(markdownText string) ([][]Token, string) {
 			case "list":
 				var tokens []Token
 				i, tokens = listParse(list[i:], i, blockResult)
+				i--
 				dataList = append(dataList, tokens)
 			}
 		} else {
@@ -975,32 +976,36 @@ func listParse(lines []string, index int, blockResult BlockResult) (int, []Token
 			TokenType:   "list",
 			NodeTagName: "ul",
 			NodeClass:   "list",
-			Children: []Token{},
+			Children:    []Token{},
 		}}
 	originIndent := blockResult.IndentCount
-	for i := 0; i < len(lines); i++ {
-		if i != 0 {
-			ok, temResult := isInList(lines[i])
-			if ok { // list的新一行
-                if temResult.IndentCount == originIndent { // 新的列表项不是子列表
-
-                } else if temResult.IndentCount > 0 && temResult.IndentCount > originIndent + 4 {  //
-
-                }
-            } else { // list结束
-            }
-		} else {
-            tokens[0].Children = append(tokens[0].Children, Token{
-                TokenType:   "list-item",
-                NodeTagName: "li",
-                NodeClass:   "list-item",
-                Children:    []Token{},
-            })
-			text := []rune(lines[i])[1+blockResult.IndentCount:]
-			line := Line{Origin: text, Tokens: []Token{}}
-			line.LineParse()
-			tokens[0].Children[0].Children = line.Tokens
+	i := index
+	for ; i < len(lines); i++ {
+		ok, temResult := isInList(lines[i])
+		if ok { // list的新一行
+			if temResult.IndentCount >= originIndent && temResult.IndentCount < originIndent+4 { // 新的列表项不是子列表
+				tokens[0].Children = append(tokens[0].Children, Token{
+					TokenType:   "list-item",
+					NodeTagName: "li",
+					NodeClass:   "list-item",
+					Children:    []Token{},
+				})
+				text := []rune(lines[i])[2+temResult.IndentCount:]
+				line := Line{Origin: text, Tokens: []Token{}}
+				line.LineParse()
+				tokens[0].Children[len(tokens[0].Children)-1].Children = line.Tokens
+			} else if temResult.IndentCount >= originIndent+4 { //新的列表项，缩进符合下一级。
+				temIndex, subTokens := listParse(lines, i, temResult)
+				i = temIndex - 1
+				tokens[0].Children[len(tokens[0].Children)-1].Children = append(tokens[0].Children[len(tokens[0].Children)-1].Children, subTokens...)
+			} else if temResult.IndentCount < originIndent {
+				return i, tokens
+			}
+		} else { // list结束
+			index = i
+			return index, tokens
 		}
 	}
+	index = i
 	return index, tokens
 }
