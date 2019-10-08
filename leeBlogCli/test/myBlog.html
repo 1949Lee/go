@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>博客测试网页</title>
+    <!-- <title>博客测试网页</title> -->
+    <title></title>
 </head>
 <style>
     .background-strong {
@@ -41,7 +42,7 @@
     <label for="content">text</label>
 </div>
 <div style="text-align: center">
-    <textarea id="content" style="border: 1px solid rgba(0,0,0,.267);" cols="100" rows="20"></textarea>
+    <textarea id="content" style="border: 1px solid rgba(0,0,0,.267);" cols="100" rows="20" onkeydown="textInput(event)"></textarea>
     <div id="result"
          style="border: 1px solid rgba(0,0,0,.267);display: inline-block;width: 622px;height: 306px;overflow-y: auto;text-align: left"></div>
 </div>
@@ -68,6 +69,15 @@
             }
         };
         xhr.send(JSON.stringify({text: document.getElementById('content').value}))
+    }
+
+    function textInput(e) {
+        if(e.key.toUpperCase() === 'TAB') {
+            var index = e.target.selectionStart;
+            e.target.value = e.target.value.substring(0,e.target.selectionStart) + "    " + e.target.value.substring(e.target.selectionStart);
+            e.target.setSelectionRange(index + 4,index + 4)
+            e.preventDefault();
+        }
     }
 
 </script>
