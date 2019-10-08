@@ -957,7 +957,7 @@ func MarkdownParse(markdownText string) ([][]Token, string) {
 			switch blockResult.TokenType {
 			case "list":
 				var tokens []Token
-				i, tokens = listParse(list[i:], i, blockResult)
+				i, tokens = listParse(list, i, blockResult)
 				i--
 				dataList = append(dataList, tokens)
 			}
