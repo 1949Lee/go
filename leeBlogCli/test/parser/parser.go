@@ -106,7 +106,7 @@ func (l *Line) ToHtml() string {
 // 行内转换的解析函数
 func (l *Line) LineParse() {
 	if len(l.Origin) == 0 {
-		l.Tokens = append(l.Tokens, Token{TokenType: "empty-line", NodeTagName: "br", NodeClass: "empty-line"})
+		l.Tokens = append(l.Tokens, Token{TokenType: "empty-line-br", NodeTagName: "br", NodeClass: "empty-line-br"})
 	} else {
 		//l.ItalicTextParse()
 		//l.DeleteTextParse()
@@ -780,9 +780,15 @@ func LinesToHtml(lines [][]Token) string {
 // 将传入的token数组转化为html
 func lineToHtml(tokens []Token) string {
 	var builder strings.Builder
-	builder.WriteString(`<div class="block">`)
-	builder.WriteString(tokensToHtml(tokens))
-	builder.WriteString(`</div>`)
+	if tokens[0].TokenType == "empty-line-br" {
+		builder.WriteString(`<div class="block empty-single-line-block">`)
+		builder.WriteString(tokensToHtml(tokens))
+		builder.WriteString(`</div>`)
+	} else {
+		builder.WriteString(`<div class="block">`)
+		builder.WriteString(tokensToHtml(tokens))
+		builder.WriteString(`</div>`)
+	}
 	return builder.String()
 }
 
@@ -790,7 +796,7 @@ func lineToHtml(tokens []Token) string {
 func tokensToHtml(tokens []Token) string {
 	var builder strings.Builder
 	for i := range tokens {
-		if tokens[i].TokenType == "empty-line" {
+		if tokens[i].TokenType == "empty-line-br" {
 			builder.WriteString("<")
 			builder.WriteString(tokens[i].NodeTagName)
 			builder.WriteString(` class="`)
@@ -897,6 +903,9 @@ func getIndentCount(lineText string) (int, string) {
 func isInBlock(lineText string) (bool, BlockResult) {
 	//origin := []rune(lineText)
 	indentCount, realRune := getIndentCount(lineText)
+	if lineText == "" {
+		return false, BlockResult{}
+	}
 	switch realRune[0] {
 	case '*', '-': // 无序列表list
 		if realRune[1] == ' ' {
