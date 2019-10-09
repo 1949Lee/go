@@ -945,6 +945,9 @@ func isInBlock(lineText string) (bool, BlockResult) {
 // 判断某一行的内容是否为属于无序列表list的一部分
 func isInList(lineText string) (bool, BlockResult) {
 	indentCount, realRune := getIndentCount(lineText)
+	if lineText == "" {
+		return false, BlockResult{}
+	}
 	switch realRune[0] {
 	case '*', '-': // 无序列表list
 		if realRune[1] == ' ' {
@@ -957,6 +960,9 @@ func isInList(lineText string) (bool, BlockResult) {
 // 判断某一行的内容是否为属于有序列表auto-order-list的一部分
 func isInAutoOrderList(lineText string) (bool, BlockResult) {
 	indentCount, realRune := getIndentCount(lineText)
+	if lineText == "" {
+		return false, BlockResult{}
+	}
 	switch realRune[0] {
 	case '+': // 有序列表auto-order-list
 		if realRune[1] == ' ' {
