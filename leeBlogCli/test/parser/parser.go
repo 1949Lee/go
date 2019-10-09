@@ -9,6 +9,11 @@ import (
 // 行内状态类型
 type LineStateType string
 
+var (
+	// 有序列表的序标的数字的间隔符。
+	AutoOrderListLevelIndexDivider = "."
+)
+
 // 行内状态枚举
 type LineStateEnum struct {
 	// 开始态
@@ -55,6 +60,8 @@ var LineState = LineStateEnum{
 	LinkHrefEnd:         "4-3",
 	BackgroundStrongEnd: "5",
 }
+
+// TODO 实现上传显示图片
 
 // Markdown的每一行
 type Line struct {
@@ -911,7 +918,7 @@ func isInBlock(lineText string) (bool, BlockResult) {
 		if realRune[1] == ' ' {
 			return true, BlockResult{TokenType: "list", IndentCount: indentCount}
 		}
-	case '>': // 颜色块colored-block或文字引用block-quote，需要进一步判断
+	case '>': // 颜色块colored-block或文字引用block-quote
 		if realRune[1] == '>' && realRune[2] == '>' {
 			return true, BlockResult{TokenType: "colored-block"}
 		} else {
@@ -919,7 +926,7 @@ func isInBlock(lineText string) (bool, BlockResult) {
 		}
 	case '|': // 表格table
 	// TODO 表格转换待实现，这里需要做判断是否是表格
-	case '`': // 代码块code-block，需要进一步判断
+	case '`': // 代码块code-block
 		if realRune[1] == '`' && realRune[2] == '`' {
 			return true, BlockResult{TokenType: "code-block"}
 		}
@@ -927,7 +934,7 @@ func isInBlock(lineText string) (bool, BlockResult) {
 		if realRune[1] == ' ' {
 			return true, BlockResult{TokenType: "auto-order-list", IndentCount: indentCount}
 		}
-	case ':': // 名词定义列表word-list，需要进一步判断
+	case ':': // 名词定义列表word-list
 		if realRune[1] == ':' {
 			return true, BlockResult{TokenType: "word-list"}
 		}
@@ -942,6 +949,18 @@ func isInList(lineText string) (bool, BlockResult) {
 	case '*', '-': // 无序列表list
 		if realRune[1] == ' ' {
 			return true, BlockResult{TokenType: "list", IndentCount: indentCount}
+		}
+	}
+	return false, BlockResult{}
+}
+
+// 判断某一行的内容是否为属于有序列表auto-order-list的一部分
+func isInAutoOrderList(lineText string) (bool, BlockResult) {
+	indentCount, realRune := getIndentCount(lineText)
+	switch realRune[0] {
+	case '+': // 有序列表auto-order-list
+		if realRune[1] == ' ' {
+			return true, BlockResult{TokenType: "auto-order-list", IndentCount: indentCount}
 		}
 	}
 	return false, BlockResult{}
@@ -969,6 +988,11 @@ func MarkdownParse(markdownText string) ([][]Token, string) {
 				i, tokens = listParse(list, i, blockResult)
 				i--
 				dataList = append(dataList, tokens)
+			case "auto-order-list":
+				var tokens []Token
+				i, tokens = autoOrderListParse(list, i, blockResult, nil)
+				i--
+				dataList = append(dataList, tokens)
 			}
 		} else {
 			line := Line{Origin: []rune(list[i]), Tokens: []Token{}}
@@ -979,15 +1003,81 @@ func MarkdownParse(markdownText string) ([][]Token, string) {
 	return [][]Token{}, LinesToHtml(dataList)
 }
 
+//有序列表转换方法
+func autoOrderListParse(lines []string, index int, blockResult BlockResult, level []string) (int, []Token) {
+	originLevel := blockResult.IndentCount/4 + 1
+	tokens := []Token{
+		{
+			TokenType:   "auto-order-list",
+			NodeTagName: "ol",
+			NodeClass:   "auto-order-list list-level-" + strconv.Itoa(originLevel),
+			Children:    []Token{},
+		}}
+	originIndent := blockResult.IndentCount
+
+	i := index
+	for ; i < len(lines); i++ {
+		ok, temResult := isInAutoOrderList(lines[i])
+		if ok { // list的新一行
+			if temResult.IndentCount >= originIndent && temResult.IndentCount < originIndent+4 { // 新的列表项不是子列表
+				tokens[0].Children = append(tokens[0].Children, Token{
+					TokenType:   "auto-order-list-item",
+					NodeTagName: "li",
+					NodeClass:   "auto-order-list-item list-item-level-" + strconv.Itoa(originLevel),
+					Children: []Token{
+						{TokenType: "auto-order-list-item-text-wrapper", NodeTagName: "div", NodeClass: "auto-order-list-item-text-wrapper", Children: []Token{}},
+					},
+				})
+				text := []rune(lines[i])[2+temResult.IndentCount:]
+				line := Line{Origin: text, Tokens: []Token{}}
+				line.LineParse()
+				// TODO 在此添加一个序标元素，表示顺序
+				indexToken := Token{
+					TokenType:   "auto-order-list-item-level-index",
+					NodeTagName: "span",
+					NodeClass:   "auto-order-list-item-level-index",
+				}
+				if level != nil {
+					tempLevel := append(level, strconv.Itoa(len(tokens[0].Children)))
+					indexToken.Text = strings.Join(tempLevel, AutoOrderListLevelIndexDivider)
+				} else {
+					indexToken.Text = strconv.Itoa(len(tokens[0].Children)) + AutoOrderListLevelIndexDivider
+				}
+				tokens[0].Children[len(tokens[0].Children)-1].Children[0].Children = append([]Token{indexToken}, line.Tokens...)
+			} else if temResult.IndentCount >= originIndent+4 { //新的列表项，缩进符合下一级。
+				var temIndex int
+				var subTokens []Token
+				if level != nil {
+					temIndex, subTokens = autoOrderListParse(lines, i, temResult, append(level, strconv.Itoa(len(tokens[0].Children))))
+				} else {
+					temIndex, subTokens = autoOrderListParse(lines, i, temResult, []string{strconv.Itoa(len(tokens[0].Children))})
+				}
+				i = temIndex - 1
+				tokens[0].Children[len(tokens[0].Children)-1].Children = append(tokens[0].Children[len(tokens[0].Children)-1].Children, subTokens...)
+			} else if temResult.IndentCount < originIndent {
+				return i, tokens
+			}
+		} else { // list结束
+			index = i
+			return index, tokens
+		}
+	}
+	index = i
+	return index, tokens
+}
+
+// 无序列表转换方法
 func listParse(lines []string, index int, blockResult BlockResult) (int, []Token) {
+	originLevel := blockResult.IndentCount/4 + 1
 	tokens := []Token{
 		{
 			TokenType:   "list",
 			NodeTagName: "ul",
-			NodeClass:   "list",
+			NodeClass:   "list list-level-" + strconv.Itoa(originLevel),
 			Children:    []Token{},
 		}}
 	originIndent := blockResult.IndentCount
+
 	i := index
 	for ; i < len(lines); i++ {
 		ok, temResult := isInList(lines[i])
@@ -996,13 +1086,15 @@ func listParse(lines []string, index int, blockResult BlockResult) (int, []Token
 				tokens[0].Children = append(tokens[0].Children, Token{
 					TokenType:   "list-item",
 					NodeTagName: "li",
-					NodeClass:   "list-item",
-					Children:    []Token{},
+					NodeClass:   "list-item list-item-level-" + strconv.Itoa(originLevel),
+					Children: []Token{
+						{TokenType: "list-item-text-wrapper", NodeTagName: "div", NodeClass: "list-item-text-wrapper", Children: []Token{}},
+					},
 				})
 				text := []rune(lines[i])[2+temResult.IndentCount:]
 				line := Line{Origin: text, Tokens: []Token{}}
 				line.LineParse()
-				tokens[0].Children[len(tokens[0].Children)-1].Children = line.Tokens
+				tokens[0].Children[len(tokens[0].Children)-1].Children[0].Children = line.Tokens
 			} else if temResult.IndentCount >= originIndent+4 { //新的列表项，缩进符合下一级。
 				temIndex, subTokens := listParse(lines, i, temResult)
 				i = temIndex - 1
