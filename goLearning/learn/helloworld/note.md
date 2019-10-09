@@ -166,6 +166,11 @@ channel作为返回值得时候有三种类型。
 ### http、http.Client
 http.Client可以构造一个客户端，然后通过client.Do(req)的方式来发送请求。
 可以使用[net/http/pprof](https://cloud.tencent.com/developer/section/1143647)来查看web服务的性能
+查看相关资料：使用http.FileServer来提供静态内容，css、js、图片、index.html等。
+
+
+### html/template 模板引擎
+查看相关资料：语法+测试
 
 
 
