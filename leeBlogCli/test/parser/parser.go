@@ -988,18 +988,10 @@ func MarkdownParse(markdownText string) ([][]Token, string) {
 	dataList := make([][]Token, 0)
 	for i := 0; i < len(list); i++ {
 		if ok, blockResult := isInBlock(list[i]); ok {
-			switch blockResult.TokenType {
-			case "list":
-				var tokens []Token
-				i, tokens = listParse(list, i, blockResult)
-				i--
-				dataList = append(dataList, tokens)
-			case "auto-order-list":
-				var tokens []Token
-				i, tokens = autoOrderListParse(list, i, blockResult, nil)
-				i--
-				dataList = append(dataList, tokens)
-			}
+			var tokens []Token
+			i, tokens = blockParse(list, i, blockResult)
+			i--
+			dataList = append(dataList, tokens)
 		} else {
 			line := Line{Origin: []rune(list[i]), Tokens: []Token{}}
 			line.LineParse()
@@ -1007,6 +999,22 @@ func MarkdownParse(markdownText string) ([][]Token, string) {
 		}
 	}
 	return [][]Token{}, LinesToHtml(dataList)
+}
+
+func blockParse(lines []string, index int, blockResult BlockResult) (int, []Token) {
+	var (
+		tokens []Token
+		i      int
+	)
+	switch blockResult.TokenType {
+	case "list":
+		i, tokens = listParse(lines, index, blockResult)
+		return i, tokens
+	case "auto-order-list":
+		i, tokens = autoOrderListParse(lines, index, blockResult, nil)
+		return i, tokens
+	}
+	return index, nil
 }
 
 //有序列表转换方法
@@ -1023,8 +1031,8 @@ func autoOrderListParse(lines []string, index int, blockResult BlockResult, leve
 
 	i := index
 	for ; i < len(lines); i++ {
-		ok, temResult := isInAutoOrderList(lines[i])
-		if ok { // list的新一行
+		ok, temResult := isInBlock(lines[i])
+		if ok && temResult.TokenType == "auto-order-list" {
 			if temResult.IndentCount >= originIndent && temResult.IndentCount < originIndent+4 { // 新的列表项不是子列表
 				tokens[0].Children = append(tokens[0].Children, Token{
 					TokenType:   "auto-order-list-item",
@@ -1051,21 +1059,26 @@ func autoOrderListParse(lines []string, index int, blockResult BlockResult, leve
 				}
 				tokens[0].Children[len(tokens[0].Children)-1].Children[0].Children = append([]Token{indexToken}, line.Tokens...)
 			} else if temResult.IndentCount >= originIndent+4 { //新的列表项，缩进符合下一级。
-				var temIndex int
+				//var temIndex int
 				var subTokens []Token
 				if level != nil {
-					temIndex, subTokens = autoOrderListParse(lines, i, temResult, append(level, strconv.Itoa(len(tokens[0].Children))))
+					i, subTokens = autoOrderListParse(lines, i, temResult, append(level, strconv.Itoa(len(tokens[0].Children))))
 				} else {
-					temIndex, subTokens = autoOrderListParse(lines, i, temResult, []string{strconv.Itoa(len(tokens[0].Children))})
+					i, subTokens = autoOrderListParse(lines, i, temResult, []string{strconv.Itoa(len(tokens[0].Children))})
 				}
-				i = temIndex - 1
+				i--
 				tokens[0].Children[len(tokens[0].Children)-1].Children = append(tokens[0].Children[len(tokens[0].Children)-1].Children, subTokens...)
 			} else if temResult.IndentCount < originIndent {
 				return i, tokens
 			}
-		} else { // list结束
+		} else if !ok { // list结束
 			index = i
 			return index, tokens
+		} else { // 其他块
+			temTokens := make([]Token, 0)
+			i, temTokens = blockParse(lines, i, temResult)
+			tokens[0].Children[len(tokens[0].Children)-1].Children = append(tokens[0].Children[len(tokens[0].Children)-1].Children, temTokens...)
+			i--
 		}
 	}
 	index = i
