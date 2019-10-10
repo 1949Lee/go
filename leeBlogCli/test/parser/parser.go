@@ -1075,10 +1075,15 @@ func autoOrderListParse(lines []string, index int, blockResult BlockResult, leve
 			index = i
 			return index, tokens
 		} else { // 其他块
-			temTokens := make([]Token, 0)
-			i, temTokens = blockParse(lines, i, temResult)
-			tokens[0].Children[len(tokens[0].Children)-1].Children = append(tokens[0].Children[len(tokens[0].Children)-1].Children, temTokens...)
-			i--
+			if temResult.IndentCount >= originIndent+4 {
+				temTokens := make([]Token, 0)
+				i, temTokens = blockParse(lines, i, temResult)
+				tokens[0].Children[len(tokens[0].Children)-1].Children = append(tokens[0].Children[len(tokens[0].Children)-1].Children, temTokens...)
+				i--
+			} else {
+				index = i
+				return index, tokens
+			}
 		}
 	}
 	index = i
