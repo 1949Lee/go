@@ -1029,6 +1029,9 @@ func blockParse(lines []string, index int, blockResult BlockResult) (int, []Toke
 	case "auto-order-list":
 		i, tokens = autoOrderListParse(lines, index, blockResult, nil)
 		return i, tokens
+	case "block-quote":
+		i, tokens = blockQuoteParse(lines, index, blockResult)
+		return i, tokens
 	}
 	return index, nil
 }
@@ -1155,7 +1158,7 @@ func blockQuoteParse(lines []string, index int, blockResult BlockResult) (int, [
 	tokens := []Token{
 		{
 			TokenType:   "block-quote",
-			NodeTagName: "div",
+			NodeTagName: "blockquote",
 			NodeClass:   "block-quote",
 			Children:    []Token{},
 		}}
@@ -1170,10 +1173,16 @@ func blockQuoteParse(lines []string, index int, blockResult BlockResult) (int, [
 				NodeTagName: "div",
 				NodeClass:   "block-quote-line",
 			})
-			if subOk, subResult := isInBlock(lines[i]); subOk {
+			if subOk, subResult := isInBlock(lines[i][2:]); subOk {
 				// todo 兼容其他块parse
 				temTokens := make([]Token, 0)
-				i, temTokens = blockParse(lines, i, subResult)
+				var subI int
+				var subLines []string
+				for l := range lines {
+					subLines = append(subLines, lines[l][2:])
+				}
+				subI, temTokens = blockParse(subLines, 0, subResult)
+				i = i + subI
 				tokens[0].Children[len(tokens[0].Children)-1].Children = append(tokens[0].Children[len(tokens[0].Children)-1].Children, temTokens...)
 				i--
 			} else {
