@@ -957,6 +957,21 @@ func isInList(lineText string) (bool, BlockResult) {
 	return false, BlockResult{}
 }
 
+// 判断某一行的内容是否为属于引用块（block-quote）的一部分
+func isInBockQuote(lineText string) (bool, BlockResult) {
+	indentCount, realRune := getIndentCount(lineText)
+	if lineText == "" {
+		return false, BlockResult{}
+	}
+	switch realRune[0] {
+	case '>': // 有序列表auto-order-list
+		if realRune[1] == ' ' {
+			return true, BlockResult{TokenType: "block-quote", IndentCount: indentCount}
+		}
+	}
+	return false, BlockResult{}
+}
+
 // 判断某一行的内容是否为属于有序列表auto-order-list的一部分
 func isInAutoOrderList(lineText string) (bool, BlockResult) {
 	indentCount, realRune := getIndentCount(lineText)
@@ -1001,6 +1016,7 @@ func MarkdownParse(markdownText string) ([][]Token, string) {
 	return [][]Token{}, LinesToHtml(dataList)
 }
 
+// 将多行转换为块。
 func blockParse(lines []string, index int, blockResult BlockResult) (int, []Token) {
 	var (
 		tokens []Token
@@ -1127,6 +1143,46 @@ func listParse(lines []string, index int, blockResult BlockResult) (int, []Token
 				return i, tokens
 			}
 		} else { // list结束
+			index = i
+			return index, tokens
+		}
+	}
+	index = i
+	return index, tokens
+}
+
+func blockQuoteParse(lines []string, index int, blockResult BlockResult) (int, []Token) {
+	tokens := []Token{
+		{
+			TokenType:   "block-quote",
+			NodeTagName: "div",
+			NodeClass:   "block-quote",
+			Children:    []Token{},
+		}}
+	//originIndent := blockResult.IndentCount
+
+	i := index
+	for ; i < len(lines); i++ {
+		ok, temResult := isInBlock(lines[i])
+		if ok && temResult.TokenType == "block-quote" { // 是新的一行。
+			tokens[0].Children = append(tokens[0].Children, Token{
+				TokenType:   "block-quote-line",
+				NodeTagName: "div",
+				NodeClass:   "block-quote-line",
+			})
+			if subOk, subResult := isInBlock(lines[i]); subOk {
+				// todo 兼容其他块parse
+				temTokens := make([]Token, 0)
+				i, temTokens = blockParse(lines, i, subResult)
+				tokens[0].Children[len(tokens[0].Children)-1].Children = append(tokens[0].Children[len(tokens[0].Children)-1].Children, temTokens...)
+				i--
+			} else {
+				text := []rune(lines[i])[2+temResult.IndentCount:]
+				line := Line{Origin: text, Tokens: []Token{}}
+				line.LineParse()
+				tokens[0].Children[len(tokens[0].Children)-1].Children = line.Tokens
+			}
+		} else { // 引用块结束
 			index = i
 			return index, tokens
 		}
