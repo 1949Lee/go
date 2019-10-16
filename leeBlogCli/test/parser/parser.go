@@ -61,8 +61,6 @@ var LineState = LineStateEnum{
 	BackgroundStrongEnd: "5",
 }
 
-// TODO 实现上传显示图片
-
 // Markdown的每一行
 type Line struct {
 	// 原始字符串
@@ -635,17 +633,6 @@ func (l *Line) confirmDeletedText(i int) int {
 	// 返回正确的token内容
 	if l.textStart != -1 {
 		var temp string
-		//
-		if len(l.unresolvedTokens) > 0 {
-			//
-			//    //遗留的'开始*'需要放到内容的前方
-			//    temp = joinTokens(l.unresolvedTokens, "") + string(l.Origin[l.textStart:originIndex])
-			//
-			//    //制空开始数组。
-			//   l.unresolvedTokens = []unresolvedToken{}
-		} else {
-			//    temp = string(l.Origin[l.textStart:originIndex])
-		}
 		temp = string(l.Origin[l.textStart:originIndex])
 		l.appendNewToken(&Token{Text: temp, TokenType: tokenType})
 		l.textStart = -1
@@ -925,35 +912,35 @@ func isInList(lineText string) (bool, BlockResult) {
 	return false, BlockResult{}
 }
 
-// 判断某一行的内容是否为属于引用块（block-quote）的一部分
-func isInBockQuote(lineText string) (bool, BlockResult) {
-	indentCount, realRune := getIndentCount(lineText)
-	if lineText == "" {
-		return false, BlockResult{}
-	}
-	switch realRune[0] {
-	case '>': // 有序列表auto-order-list
-		if realRune[1] == ' ' {
-			return true, BlockResult{TokenType: "block-quote", IndentCount: indentCount}
-		}
-	}
-	return false, BlockResult{}
-}
-
-// 判断某一行的内容是否为属于有序列表auto-order-list的一部分
-func isInAutoOrderList(lineText string) (bool, BlockResult) {
-	indentCount, realRune := getIndentCount(lineText)
-	if lineText == "" {
-		return false, BlockResult{}
-	}
-	switch realRune[0] {
-	case '+': // 有序列表auto-order-list
-		if realRune[1] == ' ' {
-			return true, BlockResult{TokenType: "auto-order-list", IndentCount: indentCount}
-		}
-	}
-	return false, BlockResult{}
-}
+//// 判断某一行的内容是否为属于引用块（block-quote）的一部分
+//func isInBockQuote(lineText string) (bool, BlockResult) {
+//	indentCount, realRune := getIndentCount(lineText)
+//	if lineText == "" {
+//		return false, BlockResult{}
+//	}
+//	switch realRune[0] {
+//	case '>': // 有序列表auto-order-list
+//		if realRune[1] == ' ' {
+//			return true, BlockResult{TokenType: "block-quote", IndentCount: indentCount}
+//		}
+//	}
+//	return false, BlockResult{}
+//}
+//
+//// 判断某一行的内容是否为属于有序列表auto-order-list的一部分
+//func isInAutoOrderList(lineText string) (bool, BlockResult) {
+//	indentCount, realRune := getIndentCount(lineText)
+//	if lineText == "" {
+//		return false, BlockResult{}
+//	}
+//	switch realRune[0] {
+//	case '+': // 有序列表auto-order-list
+//		if realRune[1] == ' ' {
+//			return true, BlockResult{TokenType: "auto-order-list", IndentCount: indentCount}
+//		}
+//	}
+//	return false, BlockResult{}
+//}
 
 // 接受markdown字符串，并将之转化为html
 func MarkdownParse(markdownText string) ([][]Token, string) {
@@ -1122,7 +1109,7 @@ func listParse(lines []string, index int, blockResult BlockResult) (int, []Token
 	return index, tokens
 }
 
-func blockQuoteParse(lines []string, index int, blockResult BlockResult) (int, []Token) {
+func blockQuoteParse(lines []string, index int, _ BlockResult) (int, []Token) {
 	tokens := []Token{
 		{
 			TokenType:   "block-quote",
