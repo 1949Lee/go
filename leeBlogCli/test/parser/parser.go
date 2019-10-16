@@ -1174,12 +1174,16 @@ func blockQuoteParse(lines []string, index int, blockResult BlockResult) (int, [
 				NodeClass:   "block-quote-line",
 			})
 			if subOk, subResult := isInBlock(lines[i][2:]); subOk {
-				// todo 兼容其他块parse
 				temTokens := make([]Token, 0)
 				var subI int
 				var subLines []string
-				for l := range lines {
-					subLines = append(subLines, lines[l][2:])
+				l := i
+				for ; l < len(lines); l++ {
+					if len(lines[l]) >= 2 {
+						subLines = append(subLines, lines[l][2:])
+					} else {
+						break
+					}
 				}
 				subI, temTokens = blockParse(subLines, 0, subResult)
 				i = i + subI
