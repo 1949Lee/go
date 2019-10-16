@@ -779,6 +779,9 @@ func lineToHtml(tokens []Token) string {
 		builder.WriteString(`<div class="block empty-single-line-block">`)
 		builder.WriteString(tokensToHtml(tokens))
 		builder.WriteString(`</div>`)
+	} else if tokens[0].TokenType == "styled-block" {
+		tokens[0].NodeClass += " block"
+		builder.WriteString(tokensToHtml(tokens))
 	} else {
 		builder.WriteString(`<div class="block">`)
 		builder.WriteString(tokensToHtml(tokens))
@@ -873,9 +876,9 @@ func isInBlock(lineText string) (bool, BlockResult) {
 		if realRune[1] == ' ' {
 			return true, BlockResult{TokenType: "list", IndentCount: indentCount}
 		}
-	case '>': // 颜色块colored-block或文字引用block-quote
+	case '>': // 样式块styled-block或文字引用block-quote
 		if realRune[1] == '>' && realRune[2] == '>' {
-			return true, BlockResult{TokenType: "colored-block"}
+			return true, BlockResult{TokenType: "styled-block"}
 		} else {
 			return true, BlockResult{TokenType: "block-quote"}
 		}
@@ -986,6 +989,9 @@ func blockParse(lines []string, index int, blockResult BlockResult) (int, []Toke
 		return i, tokens
 	case "block-quote":
 		i, tokens = blockQuoteParse(lines, index, blockResult)
+		return i, tokens
+	case "styled-block":
+		i, tokens = styledBlockParse(lines, index, blockResult)
 		return i, tokens
 	}
 	return index, nil
@@ -1113,7 +1119,7 @@ func blockQuoteParse(lines []string, index int, _ BlockResult) (int, []Token) {
 	tokens := []Token{
 		{
 			TokenType:   "block-quote",
-			NodeTagName: "blockquote",
+			NodeTagName: "div",
 			NodeClass:   "block-quote",
 			Children:    []Token{},
 		}}
@@ -1153,6 +1159,49 @@ func blockQuoteParse(lines []string, index int, _ BlockResult) (int, []Token) {
 		} else { // 引用块结束
 			index = i
 			return index, tokens
+		}
+	}
+	index = i
+	return index, tokens
+}
+
+func styledBlockParse(lines []string, index int, blockResult BlockResult) (int, []Token) {
+	tokens := []Token{
+		{
+			TokenType:   "styled-block",
+			NodeTagName: "div",
+			NodeClass:   "styled-block",
+			Children:    []Token{},
+		}}
+	//originIndent := blockResult.IndentCount
+
+	i := index
+	// TODO 处理颜色块的配置。
+	i++
+	for ; i < len(lines); i++ {
+		ok, temResult := isInBlock(lines[i])
+		if ok && temResult.TokenType == "styled-block" { // 样式块结束。
+			index = i + 1
+			return index, tokens
+		} else if !ok { // 非块行
+			tokens[0].Children = append(tokens[0].Children, Token{
+				TokenType:   "styled-block-line",
+				NodeTagName: "div",
+				NodeClass:   "styled-block-line",
+			})
+			line := Line{Origin: []rune(lines[i]), Tokens: []Token{}}
+			line.LineParse()
+			tokens[0].Children[len(tokens[0].Children)-1].Children = line.Tokens
+		} else { // 其他块
+			tokens[0].Children = append(tokens[0].Children, Token{
+				TokenType:   "styled-block-line",
+				NodeTagName: "div",
+				NodeClass:   "styled-block-line",
+			})
+			temTokens := make([]Token, 0)
+			i, temTokens = blockParse(lines, i, temResult)
+			tokens[0].Children[len(tokens[0].Children)-1].Children = append(tokens[0].Children[len(tokens[0].Children)-1].Children, temTokens...)
+			i--
 		}
 	}
 	index = i
