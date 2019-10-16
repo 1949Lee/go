@@ -105,6 +105,10 @@ type NodeAttr struct {
 	Value string `json:"value"`
 }
 
+var markdownRunes = []rune{
+	'`', '+', '-', '[', ']', '!', '(', ')', '{', '}', '>', '<', '~', '|', '\\', ':', '#',
+}
+
 // 根据当前line的Tokens生成html
 func (l *Line) ToHtml() string {
 	return lineToHtml(l.Tokens)
@@ -115,11 +119,11 @@ func (l *Line) LineParse() {
 	if len(l.Origin) == 0 {
 		l.Tokens = append(l.Tokens, Token{TokenType: "empty-line-br", NodeTagName: "br", NodeClass: "empty-line-br"})
 	} else {
-		//l.ItalicTextParse()
+		l.ItalicTextParse()
 		//l.DeleteTextParse()
 		//l.LinkTextParse()
 		//l.BackgroundStrongParse()
-		l.HeaderTitleParse()
+		//l.HeaderTitleParse()
 	}
 }
 
@@ -129,7 +133,7 @@ func (l *Line) ItalicTextParse() {
 	l.textStart = -1
 	for i := 0; i < len(l.Origin); i++ {
 		ch := l.Origin[i]
-		if ch == '\\' && i < len(l.Origin)-1 && (l.Origin[i+1] == '*') {
+		if ch == '\\' && i < len(l.Origin)-1 && isMarkdownRunes(l.Origin[i+1]) {
 			l.Origin = append(l.Origin[:i], l.Origin[i+1:]...)
 		}
 		switch l.state {
@@ -208,7 +212,7 @@ func (l *Line) DeleteTextParse() {
 	l.textStart = -1
 	for i := 0; i < len(l.Origin); i++ {
 		ch := l.Origin[i]
-		if ch == '\\' && i < len(l.Origin)-1 && (l.Origin[i+1] == '~') {
+		if ch == '\\' && i < len(l.Origin)-1 && isMarkdownRunes(l.Origin[i+1]) {
 			l.Origin = append(l.Origin[:i], l.Origin[i+1:]...)
 		}
 		switch l.state {
@@ -312,10 +316,7 @@ func (l *Line) LinkTextParse() {
 	l.unresolvedTokens = []unresolvedToken{}
 	for i := 0; i < len(l.Origin); i++ {
 		ch := l.Origin[i]
-		if ch == '\\' && i < len(l.Origin)-1 && (l.Origin[i+1] == '[' ||
-			l.Origin[i+1] == ']' ||
-			l.Origin[i+1] == ')' ||
-			l.Origin[i+1] == '(') {
+		if ch == '\\' && i < len(l.Origin)-1 && isMarkdownRunes(l.Origin[i+1]) {
 			l.Origin = append(l.Origin[:i], l.Origin[i+1:]...)
 		}
 		switch l.state {
@@ -455,7 +456,7 @@ func (l *Line) BackgroundStrongParse() {
 	l.textStart = -1
 	for i := 0; i < len(l.Origin); i++ {
 		ch := l.Origin[i]
-		if ch == '\\' && i < len(l.Origin)-1 && (l.Origin[i+1] == '`') {
+		if ch == '\\' && i < len(l.Origin)-1 && isMarkdownRunes(l.Origin[i+1]) {
 			l.Origin = append(l.Origin[:i], l.Origin[i+1:]...)
 		}
 		switch l.state {
@@ -528,7 +529,7 @@ func (l *Line) HeaderTitleParse() {
 						return
 					}
 				}
-				if ch == '\\' && i < len(l.Origin)-1 && (l.Origin[i+1] == '#') {
+				if ch == '\\' && i < len(l.Origin)-1 && isMarkdownRunes(l.Origin[i+1]) {
 					l.Origin = append(l.Origin[:i], l.Origin[i+1:]...)
 				}
 			}
@@ -540,7 +541,7 @@ func (l *Line) HeaderTitleParse() {
 	} else { // 行开头不是#，直接进行其他转换
 		for i := 0; i < len(l.Origin); i++ {
 			ch := l.Origin[i]
-			if ch == '\\' && i < len(l.Origin)-1 && (l.Origin[i+1] == '#') {
+			if ch == '\\' && i < len(l.Origin)-1 && isMarkdownRunes(l.Origin[i+1]) {
 				l.Origin = append(l.Origin[:i], l.Origin[i+1:]...)
 			}
 		}
@@ -848,46 +849,13 @@ func tokensToHtml(tokens []Token) string {
 	return builder.String()
 }
 
-// 处理行line是否是多行块的开头
-func handleBlockForLines(line Line, index int) {
-	//l.state = LineState.Start
-	//l.textStart = -1
-	////如果行开头是#号，则进行多级标题判断。
-	//if l.Origin[0] == '#' {
-	//    inHeader := true
-	//    headerLevel := 0
-	//    for i := 0; i < len(l.Origin); i++ {
-	//        ch := l.Origin[i]
-	//        if inHeader && ch == '#' {
-	//            headerLevel++
-	//        } else {
-	//            if inHeader {
-	//                inHeader = false
-	//                if ch == ' ' { // 连续#号之后，必须跟一个空格。
-	//                    l.textStart = i + 1
-	//                } else { // 连续#号之后，若没有跟空格，则直接进行其他转换。
-	//                    l.BackgroundStrongParse()
-	//                    return
-	//                }
-	//            }
-	//            if ch == '\\' && i < len(l.Origin)-1 && (l.Origin[i+1] == '#') {
-	//                l.Origin = append(l.Origin[:i], l.Origin[i+1:]...)
-	//            }
-	//        }
-	//    }
-	//    l.appendNewToken(&Token{Text: string(l.Origin[l.textStart:]), NodeTagName: "h" + strconv.Itoa(headerLevel), TokenType: "header"})
-	//    l.parseWithOther(func(line *Line) {
-	//        line.BackgroundStrongParse()
-	//    })
-	//} else { // 行开头不是#，直接进行其他转换
-	//    for i := 0; i < len(l.Origin); i++ {
-	//        ch := l.Origin[i]
-	//        if ch == '\\' && i < len(l.Origin)-1 && (l.Origin[i+1] == '#') {
-	//            l.Origin = append(l.Origin[:i], l.Origin[i+1:]...)
-	//        }
-	//    }
-	//    l.BackgroundStrongParse()
-	//}
+func isMarkdownRunes(r rune) bool {
+	for _, _r := range markdownRunes {
+		if _r == r {
+			return true
+		}
+	}
+	return false
 }
 
 type BlockResult struct {
