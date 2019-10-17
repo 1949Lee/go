@@ -1,9 +1,12 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"regexp"
+)
 
 func main() {
-	a := 7/4 + 1
-	b := float64(4) / 7
-	fmt.Println(a, b)
+	a := ">>> a dsada"
+	re := regexp.MustCompile(`>+\s*(.+)`)
+	fmt.Println(re.FindAllStringSubmatch(a, -1)[0][1])
 }

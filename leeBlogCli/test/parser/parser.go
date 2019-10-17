@@ -2,6 +2,7 @@ package parser
 
 import (
 	"bytes"
+	"regexp"
 	"strconv"
 	"strings"
 )
@@ -117,11 +118,11 @@ func (l *Line) LineParse() {
 	if len(l.Origin) == 0 {
 		l.Tokens = append(l.Tokens, Token{TokenType: "empty-line-br", NodeTagName: "br", NodeClass: "empty-line-br"})
 	} else {
-		l.ItalicTextParse()
+		//l.ItalicTextParse()
 		//l.DeleteTextParse()
 		//l.LinkTextParse()
 		//l.BackgroundStrongParse()
-		//l.HeaderTitleParse()
+		l.HeaderTitleParse()
 	}
 }
 
@@ -897,7 +898,7 @@ func isInBlock(lineText string) (bool, BlockResult) {
 			return true, BlockResult{TokenType: "word-list"}
 		}
 	}
-	return false, BlockResult{}
+	return false, BlockResult{IndentCount: indentCount}
 }
 
 // 判断某一行的内容是否为属于无序列表list的一部分
@@ -966,7 +967,10 @@ func MarkdownParse(markdownText string) ([][]Token, string) {
 			i--
 			dataList = append(dataList, tokens)
 		} else {
-			line := Line{Origin: []rune(list[i]), Tokens: []Token{}}
+
+			line := Line{
+				Origin: []rune(strings.Replace(list[i], " ", "&#8194;", blockResult.IndentCount)),
+				Tokens: []Token{}}
 			line.LineParse()
 			dataList = append(dataList, line.Tokens)
 		}
@@ -1115,6 +1119,7 @@ func listParse(lines []string, index int, blockResult BlockResult) (int, []Token
 	return index, tokens
 }
 
+// 文字引用块转换方法
 func blockQuoteParse(lines []string, index int, _ BlockResult) (int, []Token) {
 	tokens := []Token{
 		{
@@ -1165,6 +1170,7 @@ func blockQuoteParse(lines []string, index int, _ BlockResult) (int, []Token) {
 	return index, tokens
 }
 
+// 颜色块转换方法
 func styledBlockParse(lines []string, index int, blockResult BlockResult) (int, []Token) {
 	tokens := []Token{
 		{
@@ -1176,7 +1182,8 @@ func styledBlockParse(lines []string, index int, blockResult BlockResult) (int, 
 	//originIndent := blockResult.IndentCount
 
 	i := index
-	// TODO 处理颜色块的配置。
+	re := regexp.MustCompile(`>+\s*(.+)`)
+	tokens[0].NodeAttrs = handleTokenNodeInlineStyle(re.FindAllStringSubmatch(lines[i], -1)[0][1])
 	i++
 	for ; i < len(lines); i++ {
 		ok, temResult := isInBlock(lines[i])
@@ -1206,4 +1213,11 @@ func styledBlockParse(lines []string, index int, blockResult BlockResult) (int, 
 	}
 	index = i
 	return index, tokens
+}
+
+// 根据传入的字符串，解析并返回得到的html node attr
+func handleTokenNodeInlineStyle(str string) []NodeAttr {
+	finalAttrs := make([]NodeAttr, 0)
+	finalAttrs = append(finalAttrs, NodeAttr{Key: "style", Value: str})
+	return finalAttrs
 }
