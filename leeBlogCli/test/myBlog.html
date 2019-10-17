@@ -5,6 +5,8 @@
     <!-- <title>博客测试网页</title> -->
     <title></title>
     <link rel="stylesheet/less" href="index.less">
+    <link rel="stylesheet"
+          href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.10/styles/default.min.css">
 </head>
 <body>
 <div style="text-align: center">
@@ -13,15 +15,17 @@
 <div style="text-align: center">
     <textarea id="content" style="border: 1px solid rgba(0,0,0,.267);" cols="100" rows="20" onkeydown="textInput(event)"></textarea>
     <div id="result"
-         style="border: 1px solid rgba(0,0,0,.267);display: inline-block;width: 622px;height: 306px;overflow-y: auto;text-align: left"></div>
+         style="border: 1px solid rgba(0,0,0,.267);display: inline-block;width: 622px;height: 306px;overflow-y: auto;text-align: left">
+    </div>
 </div>
 <div style="text-align: center">
     <button type="button" onclick="save()">确认</button>
 </div>
 
+
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.10/highlight.min.js"></script>
 <script src="less.min.js"></script>
 <script>
-
     function save() {
         let xhr = new XMLHttpRequest();
         xhr.open("POST", "http://127.0.0.1:1314", true);
@@ -34,7 +38,12 @@
                 // for (let i = 0; i < list.length; i++) {
                 //     html += list[i].html;
                 // }
-                document.getElementById('result').innerHTML = JSON.parse(xhr.responseText).data.html
+                document.getElementById('result').innerHTML = JSON.parse(xhr.responseText).data.html;
+                setTimeout(function () {
+                    document.querySelectorAll('pre code').forEach((block) => {
+                        hljs.highlightBlock(block);
+                    });
+                },0);
             }
         };
         xhr.send(JSON.stringify({text: document.getElementById('content').value}))

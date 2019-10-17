@@ -997,6 +997,9 @@ func blockParse(lines []string, index int, blockResult BlockResult) (int, []Toke
 	case "styled-block":
 		i, tokens = styledBlockParse(lines, index, blockResult)
 		return i, tokens
+	case "code-block":
+		i, tokens = codeBlockParse(lines, index, blockResult)
+		return i, tokens
 	}
 	return index, nil
 }
@@ -1212,6 +1215,37 @@ func styledBlockParse(lines []string, index int, blockResult BlockResult) (int, 
 		}
 	}
 	index = i
+	return index, tokens
+}
+
+func codeBlockParse(lines []string, index int, blockResult BlockResult) (int, []Token) {
+	tokens := []Token{
+		{
+			TokenType:   "code-block",
+			NodeTagName: "pre",
+			NodeClass:   "code-block",
+			Children: []Token{
+				{
+					TokenType:   "code-block-code",
+					NodeTagName: "code",
+				},
+			},
+		}}
+	var buffer bytes.Buffer
+	i := index
+	re := regexp.MustCompile("`+\\s*(.+)")
+	tokens[0].Children[0].NodeClass = re.FindAllStringSubmatch(lines[i], -1)[0][1]
+	i++
+	for ; i < len(lines); i++ {
+		ok, temResult := isInBlock(lines[i])
+		if ok && temResult.TokenType == "code-block" { // 代码块结束。
+			index = i + 1
+		} else {
+			buffer.WriteString(lines[i])
+			buffer.WriteString("\n")
+		}
+	}
+	tokens[0].Children[0].Text = buffer.String()
 	return index, tokens
 }
 
