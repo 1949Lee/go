@@ -1240,6 +1240,7 @@ func codeBlockParse(lines []string, index int, blockResult BlockResult) (int, []
 		ok, temResult := isInBlock(lines[i])
 		if ok && temResult.TokenType == "code-block" { // 代码块结束。
 			index = i + 1
+			break
 		} else {
 			buffer.WriteString(lines[i])
 			buffer.WriteString("\n")
