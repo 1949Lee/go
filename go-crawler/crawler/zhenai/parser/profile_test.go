@@ -4,8 +4,8 @@ import (
 	"io/ioutil"
 	"testing"
 
-	"imooc.com/ccmouse/learngo/crawler/engine"
-	"imooc.com/ccmouse/learngo/crawler/model"
+	"go-crawler/crawler/engine"
+	"go-crawler/crawler/model"
 )
 
 func TestParseProfile(t *testing.T) {

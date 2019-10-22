@@ -11,10 +11,10 @@ import (
 	"regexp"
 
 	"gopkg.in/olivere/elastic.v5"
-	"imooc.com/ccmouse/learngo/crawler/config"
-	"imooc.com/ccmouse/learngo/crawler/engine"
-	"imooc.com/ccmouse/learngo/crawler/frontend/model"
-	"imooc.com/ccmouse/learngo/crawler/frontend/view"
+	"go-crawler/crawler/config"
+	"go-crawler/crawler/engine"
+	"go-crawler/crawler/frontend/model"
+	"go-crawler/crawler/frontend/view"
 )
 
 type SearchResultHandler struct {

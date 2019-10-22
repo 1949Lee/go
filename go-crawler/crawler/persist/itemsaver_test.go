@@ -8,8 +8,8 @@ import (
 	"encoding/json"
 
 	"gopkg.in/olivere/elastic.v5"
-	"imooc.com/ccmouse/learngo/crawler/engine"
-	"imooc.com/ccmouse/learngo/crawler/model"
+	"go-crawler/crawler/engine"
+	"go-crawler/crawler/model"
 )
 
 func TestSave(t *testing.T) {

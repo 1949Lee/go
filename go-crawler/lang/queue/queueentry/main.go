@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	"imooc.com/ccmouse/learngo/lang/queue"
+	"go-crawler/lang/queue"
 )
 
 func main() {

@@ -7,9 +7,9 @@ import (
 
 	"flag"
 
-	"imooc.com/ccmouse/learngo/crawler/fetcher"
-	"imooc.com/ccmouse/learngo/crawler_distributed/rpcsupport"
-	"imooc.com/ccmouse/learngo/crawler_distributed/worker"
+	"go-crawler/crawler/fetcher"
+	"go-crawler/crawler_distributed/rpcsupport"
+	"go-crawler/crawler_distributed/worker"
 )
 
 var port = flag.Int("port", 0,

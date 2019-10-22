@@ -1,4 +1,4 @@
-module imooc.com/ccmouse/learngo
+module go-crawler
 
 go 1.13
 

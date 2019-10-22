@@ -4,9 +4,9 @@ import (
 	"os"
 	"testing"
 
-	"imooc.com/ccmouse/learngo/crawler/engine"
-	"imooc.com/ccmouse/learngo/crawler/frontend/model"
-	common "imooc.com/ccmouse/learngo/crawler/model"
+	"go-crawler/crawler/engine"
+	"go-crawler/crawler/frontend/model"
+	common "go-crawler/crawler/model"
 )
 
 func TestSearchResultView_Render(t *testing.T) {

@@ -10,13 +10,13 @@ import (
 
 	"strings"
 
-	"imooc.com/ccmouse/learngo/crawler/config"
-	"imooc.com/ccmouse/learngo/crawler/engine"
-	"imooc.com/ccmouse/learngo/crawler/scheduler"
-	"imooc.com/ccmouse/learngo/crawler/zhenai/parser"
-	itemsaver "imooc.com/ccmouse/learngo/crawler_distributed/persist/client"
-	"imooc.com/ccmouse/learngo/crawler_distributed/rpcsupport"
-	worker "imooc.com/ccmouse/learngo/crawler_distributed/worker/client"
+	"go-crawler/crawler/config"
+	"go-crawler/crawler/engine"
+	"go-crawler/crawler/scheduler"
+	"go-crawler/crawler/zhenai/parser"
+	itemsaver "go-crawler/crawler_distributed/persist/client"
+	"go-crawler/crawler_distributed/rpcsupport"
+	worker "go-crawler/crawler_distributed/worker/client"
 )
 
 var (

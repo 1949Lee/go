@@ -3,7 +3,7 @@ package main
 import (
 	"net/http"
 
-	"imooc.com/ccmouse/learngo/crawler/frontend/controller"
+	"go-crawler/crawler/frontend/controller"
 )
 
 func main() {
