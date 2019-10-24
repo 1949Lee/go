@@ -7,16 +7,40 @@
     <link rel="stylesheet/less" href="index.less">
     <link rel="stylesheet"
           href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.10/styles/default.min.css">
+    <style>
+        #origin {
+            border: 1px solid rgba(0,0,0,.267);
+            width: 40vw;
+            min-height: 90vh;
+            max-height: 90vh;
+            display: inline-block;
+            vertical-align: top;
+            text-align: left;
+            margin-left: 10vw;
+            outline: none;
+            user-select: text;
+            white-space: pre-wrap;
+            overflow-wrap: break-word;
+            overflow-y: auto ;
+        }
+        #result{
+            border: 1px solid rgba(0,0,0,.267);
+            display: inline-block;
+            width: 40vw;
+            height: 90vh;
+            overflow-y: auto;
+            text-align: left;
+        }
+        #result .content {
+
+        }
+    </style>
 </head>
 <body>
-<!--<img src="./img.jpeg" alt="">-->
-<div style="text-align: center">
-    <label for="content">text</label>
-</div>
-<div style="text-align: center">
-    <textarea id="content" style="border: 1px solid rgba(0,0,0,.267);" cols="100" rows="55" onkeydown="textInput(event)"></textarea>
-    <div id="result"
-         style="border: 1px solid rgba(0,0,0,.267);display: inline-block;width: 622px;height: 831px;overflow-y: auto;text-align: left">
+<div>
+    <div id="origin" onkeydown="textInput(event)" contenteditable="true" onpaste="textPaste(event)"></div>
+<!--    <textarea id="origin" onkeydown="textInput(event)" ></textarea>-->
+    <div id="result">
     </div>
 </div>
 <div style="text-align: center">
@@ -47,7 +71,8 @@
                 },0);
             }
         };
-        xhr.send(JSON.stringify({text: document.getElementById('content').value}))
+        xhr.send(JSON.stringify({text: document.getElementById('origin').innerText}))
+        // xhr.send(JSON.stringify({text: document.getElementById('origin').value}))
     }
 
     function textInput(e) {
@@ -57,6 +82,15 @@
             e.target.setSelectionRange(index + 4,index + 4)
             e.preventDefault();
         }
+    }
+    function textPaste(e) {
+        // 阻止默认粘贴
+        e.preventDefault();
+        // 粘贴事件有一个clipboardData的属性，提供了对剪贴板的访问
+        // clipboardData的getData(fomat) 从剪贴板获取指定格式的数据
+        var text =  (e.originalEvent || e).clipboardData.getData('text/plain') || prompt('在这里输入文本');
+        // 插入
+        document.execCommand("insertText", false, text);
     }
 
 </script>

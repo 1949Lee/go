@@ -104,8 +104,32 @@ type NodeAttr struct {
 	Value string `json:"value"`
 }
 
-var markdownRunes = []rune{
-	'`', '+', '-', '[', ']', '!', '(', ')', '{', '}', '>', '<', '~', '|', '\\', ':', '#',
+//var markdownRunes = []rune{
+//	'`', '+', '-', '[', ']', '!', '(', ')', '{', '}', '>', '<', '~', '|', '\\', ':', '#',
+//}
+
+type markdownLexicalRunes struct {
+	backgroundRune    rune
+	autoOrderListRune rune
+	listRune          rune
+	linkRune          rune
+	imageRune         rune
+	quoteRune         rune
+	deleteRune        rune
+	headerRune        rune
+	italicRune        rune
+}
+
+var markdownRunes = markdownLexicalRunes{
+	backgroundRune:    '`',
+	autoOrderListRune: '+',
+	listRune:          '-',
+	linkRune:          '[',
+	imageRune:         '!',
+	quoteRune:         '>',
+	deleteRune:        '~',
+	headerRune:        '#',
+	italicRune:        '*',
 }
 
 // 根据当前line的Tokens生成html
@@ -132,7 +156,7 @@ func (l *Line) ItalicTextParse() {
 	l.textStart = -1
 	for i := 0; i < len(l.Origin); i++ {
 		ch := l.Origin[i]
-		if ch == '\\' && i < len(l.Origin)-1 && isMarkdownRunes(l.Origin[i+1]) {
+		if ch == '\\' && i < len(l.Origin)-1 && l.Origin[i+1] == markdownRunes.italicRune {
 			l.Origin = append(l.Origin[:i], l.Origin[i+1:]...)
 		}
 		switch l.state {
@@ -211,7 +235,7 @@ func (l *Line) DeleteTextParse() {
 	l.textStart = -1
 	for i := 0; i < len(l.Origin); i++ {
 		ch := l.Origin[i]
-		if ch == '\\' && i < len(l.Origin)-1 && isMarkdownRunes(l.Origin[i+1]) {
+		if ch == '\\' && i < len(l.Origin)-1 && l.Origin[i+1] == markdownRunes.deleteRune {
 			l.Origin = append(l.Origin[:i], l.Origin[i+1:]...)
 		}
 		switch l.state {
@@ -315,7 +339,7 @@ func (l *Line) LinkTextParse() {
 	l.unresolvedTokens = []unresolvedToken{}
 	for i := 0; i < len(l.Origin); i++ {
 		ch := l.Origin[i]
-		if ch == '\\' && i < len(l.Origin)-1 && isMarkdownRunes(l.Origin[i+1]) {
+		if ch == '\\' && i < len(l.Origin)-1 && l.Origin[i+1] == markdownRunes.linkRune {
 			l.Origin = append(l.Origin[:i], l.Origin[i+1:]...)
 		}
 		switch l.state {
@@ -455,7 +479,7 @@ func (l *Line) BackgroundStrongParse() {
 	l.textStart = -1
 	for i := 0; i < len(l.Origin); i++ {
 		ch := l.Origin[i]
-		if ch == '\\' && i < len(l.Origin)-1 && isMarkdownRunes(l.Origin[i+1]) {
+		if ch == '\\' && i < len(l.Origin)-1 && l.Origin[i+1] == markdownRunes.backgroundRune {
 			l.Origin = append(l.Origin[:i], l.Origin[i+1:]...)
 		}
 		switch l.state {
@@ -528,7 +552,7 @@ func (l *Line) HeaderTitleParse() {
 						return
 					}
 				}
-				if ch == '\\' && i < len(l.Origin)-1 && isMarkdownRunes(l.Origin[i+1]) {
+				if ch == '\\' && i < len(l.Origin)-1 && l.Origin[i+1] == markdownRunes.headerRune {
 					l.Origin = append(l.Origin[:i], l.Origin[i+1:]...)
 				}
 			}
@@ -540,7 +564,7 @@ func (l *Line) HeaderTitleParse() {
 	} else { // 行开头不是#，直接进行其他转换
 		for i := 0; i < len(l.Origin); i++ {
 			ch := l.Origin[i]
-			if ch == '\\' && i < len(l.Origin)-1 && isMarkdownRunes(l.Origin[i+1]) {
+			if ch == '\\' && i < len(l.Origin)-1 && l.Origin[i+1] == markdownRunes.headerRune {
 				l.Origin = append(l.Origin[:i], l.Origin[i+1:]...)
 			}
 		}
@@ -838,15 +862,6 @@ func tokensToHtml(tokens []Token) string {
 		}
 	}
 	return builder.String()
-}
-
-func isMarkdownRunes(r rune) bool {
-	for _, _r := range markdownRunes {
-		if _r == r {
-			return true
-		}
-	}
-	return false
 }
 
 type BlockResult struct {
