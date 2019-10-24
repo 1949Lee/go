@@ -473,7 +473,149 @@ func (l *Line) LinkTextParse() {
 	})
 }
 
-//行内底色变色强调的转换方法，会自行调用LinkTextParse
+// 链接转换方法，会自行调用LinkTextParse
+func (l *Line) ImageParse() {
+	l.state = LineState.Start
+	l.textStart = -1
+	tempToken := Token{}
+	l.unresolvedTokens = []unresolvedToken{}
+	for i := 0; i < len(l.Origin); i++ {
+		ch := l.Origin[i]
+		if ch == '\\' && i < len(l.Origin)-1 && l.Origin[i+1] == markdownRunes.imageRune {
+			l.Origin = append(l.Origin[:i], l.Origin[i+1:]...)
+		}
+		switch l.state {
+		case LineState.Start:
+			switch {
+			case ch == '!' && i < len(l.Origin)-1 && l.Origin[i+1] == '[':
+				// 1. 遇到[之后。需要记录这个[留着判断。
+				l.unresolvedTokens = append(l.unresolvedTokens, unresolvedToken{text: '[', start: true})
+				l.state = LineState.LinkTextEnd
+
+				// 2. 并且还要把[之前的token的text（若有）。
+				if l.textStart != -1 {
+					l.appendNewToken(&Token{Text: string(l.Origin[l.textStart:i]), TokenType: "text"})
+					l.textStart = -1
+				}
+
+				continue
+			default:
+				// 如果读到非语法字符,则记录位置。否则继续扫描下一个字符。textStart == -1表示只记录最开始的位置
+				if l.textStart == -1 {
+					l.textStart = i
+				}
+				continue
+			}
+		case LineState.LinkTextEnd:
+			switch ch {
+			case ']':
+				if len(l.unresolvedTokens) == 1 {
+					// 如果]中有文案，且后面就是(则认为已经进入链接URL判断的状态
+					if l.textStart != -1 && i+1 < len(l.Origin) && l.Origin[i+1] == '(' {
+						tempToken.Text = string(l.Origin[l.textStart:i])
+						tempToken.TokenType = "web-link"
+						l.unresolvedTokens = l.unresolvedTokens[:len(l.unresolvedTokens)-1]
+						l.unresolvedTokens = append(l.unresolvedTokens, unresolvedToken{text: '(', start: true})
+						l.state = LineState.LinkHrefEnd
+						i++
+						l.textStart = -1
+					} else if l.textStart != -1 && i+1 < len(l.Origin) && l.Origin[i+1] != '(' {
+						l.appendNewToken(&Token{Text: "[" + string(l.Origin[l.textStart:i]) + "]", TokenType: "text"})
+						l.state = LineState.Start
+						l.textStart = -1
+						tempToken = Token{}
+						l.unresolvedTokens = []unresolvedToken{}
+						l.textStart = -1
+					} else {
+						// 如果已经读到了行的最后一个字符，则进行一些未完成的token处理
+						if i+1 == len(l.Origin) {
+							if len(l.Tokens) > 0 && l.Tokens[len(l.Tokens)-1].TokenType == "text" {
+								l.Tokens[len(l.Tokens)-1].Text += "[" + string(l.Origin[l.textStart:]) + "]"
+								updateToken(&l.Tokens[len(l.Tokens)-1])
+							} else {
+								l.appendNewToken(&Token{Text: "[" + string(l.Origin[l.textStart:]) + "]", TokenType: "text"})
+							}
+							l.textStart = -1
+							l.unresolvedTokens = []unresolvedToken{}
+						}
+						l.state = LineState.Start
+						l.textStart = -1
+						tempToken = Token{}
+						l.unresolvedTokens = []unresolvedToken{}
+					}
+				}
+				continue
+			default:
+				// 如果读到非语法字符，则记录位置。否则继续扫描下一个字符。
+				if l.textStart == -1 {
+					l.textStart = i
+				}
+
+				// 如果已经读到了行的最后一个字符，则进行一些未完成的token处理
+				if i+1 == len(l.Origin) {
+					if len(l.Tokens) > 0 && l.Tokens[len(l.Tokens)-1].TokenType == "text" {
+						l.Tokens[len(l.Tokens)-1].Text += "[" + string(l.Origin[l.textStart:])
+						updateToken(&l.Tokens[len(l.Tokens)-1])
+					} else {
+						l.appendNewToken(&Token{Text: "[" + string(l.Origin[l.textStart:]), TokenType: "text"})
+					}
+					l.textStart = -1
+					l.unresolvedTokens = []unresolvedToken{}
+				}
+				continue
+			}
+		case LineState.LinkHrefEnd:
+			switch ch {
+			case ')':
+				length := len(l.unresolvedTokens)
+				//appendNewToken(l, &Token{Text: string(l.Origin[l.textStart:i]), TokenType: "text"})
+				if length == 1 {
+					if l.textStart != -1 {
+						tempToken.NodeAttrs = []NodeAttr{
+							{Key: "href", Value: string(l.Origin[l.textStart:i])},
+						}
+						l.appendNewToken(&tempToken)
+					} else {
+						var builder strings.Builder
+						builder.WriteString("[")
+						builder.WriteString(tempToken.Text)
+						builder.WriteString("]()")
+						l.appendNewToken(&Token{Text: builder.String(), TokenType: "text"})
+					}
+				}
+				l.state = LineState.Start
+				l.textStart = -1
+				tempToken = Token{}
+				l.unresolvedTokens = []unresolvedToken{}
+				continue
+			default:
+				// 如果读到非语法字符，则记录位置。否则继续扫描下一个字符。
+				if l.textStart == -1 {
+					l.textStart = i
+				}
+				// 如果已经读到了行的最后一个字符，则进行一些未完成的token处理
+				if i+1 == len(l.Origin) {
+					if len(l.Tokens) > 0 && l.Tokens[len(l.Tokens)-1].TokenType == "text" {
+						l.Tokens[len(l.Tokens)-1].Text += "[" + tempToken.Text + "](" + string(l.Origin[l.textStart:])
+						updateToken(&l.Tokens[len(l.Tokens)-1])
+					} else {
+						l.appendNewToken(&Token{Text: "[" + tempToken.Text + "](" + string(l.Origin[l.textStart:]), TokenType: "text"})
+					}
+					l.textStart = -1
+					l.unresolvedTokens = []unresolvedToken{}
+				}
+				continue
+			}
+		}
+
+	}
+	l.resolveLineToken()
+	l.parseWithOther(func(line *Line) {
+		line.DeleteTextParse()
+	})
+}
+
+//行内底色变色强调的转换方法，会自行调用ImageParse
 func (l *Line) BackgroundStrongParse() {
 	l.state = LineState.Start
 	l.textStart = -1
@@ -526,7 +668,7 @@ func (l *Line) BackgroundStrongParse() {
 	}
 	l.resolveLineToken()
 	l.parseWithOther(func(line *Line) {
-		line.LinkTextParse()
+		line.ImageParse()
 	})
 }
 
@@ -1189,7 +1331,7 @@ func blockQuoteParse(lines []string, index int, _ BlockResult) (int, []Token) {
 }
 
 // 颜色块转换方法
-func styledBlockParse(lines []string, index int, blockResult BlockResult) (int, []Token) {
+func styledBlockParse(lines []string, index int, _ BlockResult) (int, []Token) {
 	tokens := []Token{
 		{
 			TokenType:   "styled-block",
@@ -1233,7 +1375,7 @@ func styledBlockParse(lines []string, index int, blockResult BlockResult) (int, 
 	return index, tokens
 }
 
-func codeBlockParse(lines []string, index int, blockResult BlockResult) (int, []Token) {
+func codeBlockParse(lines []string, index int, _ BlockResult) (int, []Token) {
 	tokens := []Token{
 		{
 			TokenType:   "code-block",
