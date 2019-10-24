@@ -44,8 +44,20 @@ type LineStateEnum struct {
 	// 链接URL结束
 	LinkHrefEnd LineStateType
 
-	// 链接URL结束
+	// 行内变色强调结束
 	BackgroundStrongEnd LineStateType
+
+	// 图像说明文案开始
+	ImageTextStart LineStateType
+
+	// 图像说明文案结束
+	ImageTextEnd LineStateType
+
+	// 图像src文案结束
+	ImageHrefStart LineStateType
+
+	// 图像src文案结束
+	ImageHrefEnd LineStateType
 }
 
 // 行内状态含义列表
@@ -60,6 +72,10 @@ var LineState = LineStateEnum{
 	LinkHrefStart:       "4-2",
 	LinkHrefEnd:         "4-3",
 	BackgroundStrongEnd: "5",
+	ImageTextStart:      "6",
+	ImageTextEnd:        "6-1",
+	ImageHrefStart:      "4-2",
+	ImageHrefEnd:        "4-3",
 }
 
 // Markdown的每一行
@@ -96,6 +112,17 @@ type Token struct {
 	NodeClass   string     `json:"class"`
 	NodeAttrs   []NodeAttr `json:"attrs"`
 	Children    []Token    `json:"children"`
+}
+
+type TokenSlice []Token
+
+func (s TokenSlice) has(tokenType string) (bool, int) {
+	for i, t := range s {
+		if t.TokenType == tokenType {
+			return true, i
+		}
+	}
+	return false, -1
 }
 
 // html节点的属性
@@ -489,15 +516,16 @@ func (l *Line) ImageParse() {
 			switch {
 			case ch == '!' && i < len(l.Origin)-1 && l.Origin[i+1] == '[':
 				// 1. 遇到[之后。需要记录这个[留着判断。
+				l.unresolvedTokens = append(l.unresolvedTokens, unresolvedToken{text: '!', start: true})
 				l.unresolvedTokens = append(l.unresolvedTokens, unresolvedToken{text: '[', start: true})
-				l.state = LineState.LinkTextEnd
+				l.state = LineState.ImageTextEnd
 
 				// 2. 并且还要把[之前的token的text（若有）。
 				if l.textStart != -1 {
 					l.appendNewToken(&Token{Text: string(l.Origin[l.textStart:i]), TokenType: "text"})
 					l.textStart = -1
 				}
-
+				i++
 				continue
 			default:
 				// 如果读到非语法字符,则记录位置。否则继续扫描下一个字符。textStart == -1表示只记录最开始的位置
@@ -506,21 +534,21 @@ func (l *Line) ImageParse() {
 				}
 				continue
 			}
-		case LineState.LinkTextEnd:
+		case LineState.ImageTextEnd:
 			switch ch {
 			case ']':
-				if len(l.unresolvedTokens) == 1 {
+				if len(l.unresolvedTokens) >= 1 {
 					// 如果]中有文案，且后面就是(则认为已经进入链接URL判断的状态
 					if l.textStart != -1 && i+1 < len(l.Origin) && l.Origin[i+1] == '(' {
 						tempToken.Text = string(l.Origin[l.textStart:i])
-						tempToken.TokenType = "web-link"
-						l.unresolvedTokens = l.unresolvedTokens[:len(l.unresolvedTokens)-1]
+						tempToken.TokenType = "image"
+						l.unresolvedTokens = []unresolvedToken{}
 						l.unresolvedTokens = append(l.unresolvedTokens, unresolvedToken{text: '(', start: true})
-						l.state = LineState.LinkHrefEnd
+						l.state = LineState.ImageHrefEnd
 						i++
 						l.textStart = -1
 					} else if l.textStart != -1 && i+1 < len(l.Origin) && l.Origin[i+1] != '(' {
-						l.appendNewToken(&Token{Text: "[" + string(l.Origin[l.textStart:i]) + "]", TokenType: "text"})
+						l.appendNewToken(&Token{Text: joinTokens(l.unresolvedTokens, "") + string(l.Origin[l.textStart:i]) + "]", TokenType: "text"})
 						l.state = LineState.Start
 						l.textStart = -1
 						tempToken = Token{}
@@ -554,30 +582,30 @@ func (l *Line) ImageParse() {
 				// 如果已经读到了行的最后一个字符，则进行一些未完成的token处理
 				if i+1 == len(l.Origin) {
 					if len(l.Tokens) > 0 && l.Tokens[len(l.Tokens)-1].TokenType == "text" {
-						l.Tokens[len(l.Tokens)-1].Text += "[" + string(l.Origin[l.textStart:])
+
+						l.Tokens[len(l.Tokens)-1].Text += joinTokens(l.unresolvedTokens, "") + string(l.Origin[l.textStart:])
 						updateToken(&l.Tokens[len(l.Tokens)-1])
 					} else {
-						l.appendNewToken(&Token{Text: "[" + string(l.Origin[l.textStart:]), TokenType: "text"})
+						l.appendNewToken(&Token{Text: joinTokens(l.unresolvedTokens, "") + string(l.Origin[l.textStart:]), TokenType: "text"})
 					}
 					l.textStart = -1
 					l.unresolvedTokens = []unresolvedToken{}
 				}
 				continue
 			}
-		case LineState.LinkHrefEnd:
+		case LineState.ImageHrefEnd:
 			switch ch {
 			case ')':
 				length := len(l.unresolvedTokens)
-				//appendNewToken(l, &Token{Text: string(l.Origin[l.textStart:i]), TokenType: "text"})
 				if length == 1 {
 					if l.textStart != -1 {
 						tempToken.NodeAttrs = []NodeAttr{
-							{Key: "href", Value: string(l.Origin[l.textStart:i])},
+							{Key: "src", Value: string(l.Origin[l.textStart:i])},
 						}
 						l.appendNewToken(&tempToken)
 					} else {
 						var builder strings.Builder
-						builder.WriteString("[")
+						builder.WriteString("![")
 						builder.WriteString(tempToken.Text)
 						builder.WriteString("]()")
 						l.appendNewToken(&Token{Text: builder.String(), TokenType: "text"})
@@ -611,7 +639,7 @@ func (l *Line) ImageParse() {
 	}
 	l.resolveLineToken()
 	l.parseWithOther(func(line *Line) {
-		line.DeleteTextParse()
+		line.LinkTextParse()
 	})
 }
 
@@ -880,6 +908,10 @@ func (t Token) updateWith(tokens ...Token) []Token {
 		t.Children = tokens
 		t.Text = ""
 		return []Token{t}
+	case "image": //	TODO 1 image的说明文案实现（实现不应该在这里，只是做提示），2 及其更新方式更新方式在这里做。3 一行多行图片要不要考虑处理。4 图片、链接、行内变色强调的条用顺序。
+		t.Children = tokens
+		//t.Text = ""
+		return []Token{t}
 	}
 	return tokens
 }
@@ -923,6 +955,10 @@ func updateToken(t *Token) {
 	case "background-strong":
 		t.NodeClass = "inline-background-strong"
 		t.NodeTagName = "span"
+	case "image":
+		t.NodeClass = "image"
+		t.NodeTagName = "img"
+		t.NodeAttrs = append(t.NodeAttrs, NodeAttr{Key: "alt", Value: ""})
 	case "header":
 		t.NodeClass = "header-" + t.NodeTagName
 	}
@@ -942,6 +978,7 @@ func LinesToHtml(lines [][]Token) string {
 // 将传入的token数组转化为html
 func lineToHtml(tokens []Token) string {
 	var builder strings.Builder
+	s := TokenSlice(tokens)
 	if tokens[0].TokenType == "empty-line-br" {
 		builder.WriteString(`<div class="block empty-single-line-block">`)
 		builder.WriteString(tokensToHtml(tokens))
@@ -949,6 +986,27 @@ func lineToHtml(tokens []Token) string {
 	} else if tokens[0].TokenType == "styled-block" {
 		tokens[0].NodeClass += " block"
 		builder.WriteString(tokensToHtml(tokens))
+	} else if ok, index := s.has("image"); ok {
+		if len(s) == 1 {
+			builder.WriteString(`<div class="block">`)
+			builder.WriteString(tokensToHtml(tokens))
+			builder.WriteString(`</div>`)
+		} else {
+			// image之前
+			if index > 0 {
+				builder.WriteString(`<div class="block">`)
+				builder.WriteString(tokensToHtml(tokens[:index]))
+				builder.WriteString(`</div>`)
+			}
+			builder.WriteString(`<div class="block image-block">`)
+			builder.WriteString(tokensToHtml([]Token{tokens[index]}))
+			builder.WriteString(`</div>`)
+			if index < len(s)-1 {
+				builder.WriteString(`<div class="block">`)
+				builder.WriteString(tokensToHtml(tokens[index:]))
+				builder.WriteString(`</div>`)
+			}
+		}
 	} else {
 		builder.WriteString(`<div class="block">`)
 		builder.WriteString(tokensToHtml(tokens))
@@ -962,6 +1020,22 @@ func tokensToHtml(tokens []Token) string {
 	var builder strings.Builder
 	for i := range tokens {
 		if tokens[i].TokenType == "empty-line-br" {
+			builder.WriteString("<")
+			builder.WriteString(tokens[i].NodeTagName)
+			builder.WriteString(` class="`)
+			builder.WriteString(tokens[i].NodeClass)
+			builder.WriteString(`" `)
+			if len(tokens[i].NodeAttrs) > 0 {
+				for j := range tokens[i].NodeAttrs {
+					builder.WriteString(` `)
+					builder.WriteString(tokens[i].NodeAttrs[j].Key)
+					builder.WriteString(`="`)
+					builder.WriteString(tokens[i].NodeAttrs[j].Value)
+					builder.WriteString(`" `)
+				}
+			}
+			builder.WriteString("/>")
+		} else if tokens[i].TokenType == "image" {
 			builder.WriteString("<")
 			builder.WriteString(tokens[i].NodeTagName)
 			builder.WriteString(` class="`)
@@ -1189,7 +1263,6 @@ func autoOrderListParse(lines []string, index int, blockResult BlockResult, leve
 				text := []rune(lines[i])[2+temResult.IndentCount:]
 				line := Line{Origin: text, Tokens: []Token{}}
 				line.LineParse()
-				// TODO 在此添加一个序标元素，表示顺序
 				indexToken := Token{
 					TokenType:   "auto-order-list-item-level-index",
 					NodeTagName: "span",
