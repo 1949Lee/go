@@ -38,7 +38,7 @@
 </head>
 <body>
 <div>
-    <div id="origin" onkeydown="textInput(event)" contenteditable="true" onpaste="textPaste(event)"></div>
+    <div id="origin" onkeydown="textInput(event)" contenteditable="true" onpaste="textPaste(event)" onkeydown="textInput(event)"></div>
 <!--    <textarea id="origin" onkeydown="textInput(event)" ></textarea>-->
     <div id="result">
     </div>
@@ -77,9 +77,44 @@
 
     function textInput(e) {
         if(e.key.toUpperCase() === 'TAB') {
-            var index = e.target.selectionStart;
-            e.target.value = e.target.value.substring(0,e.target.selectionStart) + "    " + e.target.value.substring(e.target.selectionStart);
-            e.target.setSelectionRange(index + 4,index + 4)
+            let selection = window.getSelection();
+            if (selection.type === 'Caret'){
+                let endNode = selection.anchorNode;
+                let endIndex = selection.anchorOffset;
+                selection.anchorNode.nodeValue = '    '+ selection.anchorNode.nodeValue;
+                selection.collapse(endNode,endIndex + 4)
+                // let range = document.createRange();
+                // let range = selection.getRangeAt(0);
+                // // range.selectNode(endNode);
+                // range.setEnd(endNode,endIndex + 4);
+                // range.collapse(false);
+            } else {
+                // let startIndex = null;
+                // let endIndex = null;
+                // let parent = selection.anchorNode.parentNode;
+                // // 获取到选中的行的下标
+                // for (let i = 0; i < parent.childNodes.length;i++){
+                //     if(parent.childNodes[i].nodeValue !== '\n') {
+                //         if (parent.childNodes[i].isSameNode(selection.anchorNode)) { // 开始用鼠标拖动选择行时，点击的行。
+                //             startIndex = i;
+                //         }
+                //         if (parent.childNodes[i].isSameNode(selection.focusNode)) { // 结束用鼠标拖动选择行时，离开的行。
+                //             endIndex = i
+                //         }
+                //     }
+                // }
+                // // 因为有可能是从下往上选拖动的鼠标，所以开始下标可能会比他
+                // if (startIndex > endIndex) {
+                //     let temp = startIndex;
+                //     startIndex = endIndex;
+                //     endIndex = temp;
+                // }
+                //
+                // for (let i = startIndex;i <= endIndex;i++) {
+                //     parent.childNodes[i].nodeValue = '    '+ parent.childNodes[i].nodeValue;
+                // }
+
+            }
             e.preventDefault();
         }
     }
@@ -88,7 +123,7 @@
         e.preventDefault();
         // 粘贴事件有一个clipboardData的属性，提供了对剪贴板的访问
         // clipboardData的getData(fomat) 从剪贴板获取指定格式的数据
-        var text =  (e.originalEvent || e).clipboardData.getData('text/plain') || prompt('在这里输入文本');
+        let text =  (e.originalEvent || e).clipboardData.getData('text/plain') || prompt('在这里输入文本');
         // 插入
         document.execCommand("insertText", false, text);
     }

@@ -1003,7 +1003,7 @@ func lineToHtml(tokens []Token) string {
 			builder.WriteString(`</div>`)
 			if index < len(s)-1 {
 				builder.WriteString(`<div class="block">`)
-				builder.WriteString(tokensToHtml(tokens[index:]))
+				builder.WriteString(tokensToHtml(tokens[index+1:]))
 				builder.WriteString(`</div>`)
 			}
 		}
@@ -1129,53 +1129,8 @@ func isInBlock(lineText string) (bool, BlockResult) {
 			return true, BlockResult{TokenType: "word-list"}
 		}
 	}
-	return false, BlockResult{IndentCount: indentCount}
+	return false, BlockResult{TokenType: "text", IndentCount: indentCount}
 }
-
-// 判断某一行的内容是否为属于无序列表list的一部分
-func isInList(lineText string) (bool, BlockResult) {
-	indentCount, realRune := getIndentCount(lineText)
-	if lineText == "" {
-		return false, BlockResult{}
-	}
-	switch realRune[0] {
-	case '*', '-': // 无序列表list
-		if realRune[1] == ' ' {
-			return true, BlockResult{TokenType: "list", IndentCount: indentCount}
-		}
-	}
-	return false, BlockResult{}
-}
-
-//// 判断某一行的内容是否为属于引用块（block-quote）的一部分
-//func isInBockQuote(lineText string) (bool, BlockResult) {
-//	indentCount, realRune := getIndentCount(lineText)
-//	if lineText == "" {
-//		return false, BlockResult{}
-//	}
-//	switch realRune[0] {
-//	case '>': // 有序列表auto-order-list
-//		if realRune[1] == ' ' {
-//			return true, BlockResult{TokenType: "block-quote", IndentCount: indentCount}
-//		}
-//	}
-//	return false, BlockResult{}
-//}
-//
-//// 判断某一行的内容是否为属于有序列表auto-order-list的一部分
-//func isInAutoOrderList(lineText string) (bool, BlockResult) {
-//	indentCount, realRune := getIndentCount(lineText)
-//	if lineText == "" {
-//		return false, BlockResult{}
-//	}
-//	switch realRune[0] {
-//	case '+': // 有序列表auto-order-list
-//		if realRune[1] == ' ' {
-//			return true, BlockResult{TokenType: "auto-order-list", IndentCount: indentCount}
-//		}
-//	}
-//	return false, BlockResult{}
-//}
 
 // 接受markdown字符串，并将之转化为html
 func MarkdownParse(markdownText string) ([][]Token, string) {
@@ -1250,14 +1205,14 @@ func autoOrderListParse(lines []string, index int, blockResult BlockResult, leve
 	i := index
 	for ; i < len(lines); i++ {
 		ok, temResult := isInBlock(lines[i])
-		if ok && temResult.TokenType == "auto-order-list" {
-			if temResult.IndentCount >= originIndent && temResult.IndentCount < originIndent+4 { // 新的列表项不是子列表
+		if ok && temResult.TokenType == "auto-order-list" { // list的新一行
+			if temResult.IndentCount >= originIndent && temResult.IndentCount < originIndent+4 { // list的新一行
 				tokens[0].Children = append(tokens[0].Children, Token{
 					TokenType:   "auto-order-list-item",
 					NodeTagName: "li",
 					NodeClass:   "auto-order-list-item list-item-level-" + strconv.Itoa(originLevel),
 					Children: []Token{
-						{TokenType: "auto-order-list-item-text-wrapper", NodeTagName: "div", NodeClass: "auto-order-list-item-text-wrapper", Children: []Token{}},
+						{TokenType: "auto-order-list-item-text-line-wrapper", NodeTagName: "div", NodeClass: "auto-order-list-item-text-line-wrapper", Children: []Token{}},
 					},
 				})
 				text := []rune(lines[i])[2+temResult.IndentCount:]
@@ -1288,6 +1243,18 @@ func autoOrderListParse(lines []string, index int, blockResult BlockResult, leve
 			} else if temResult.IndentCount < originIndent {
 				return i, tokens
 			}
+		} else if !ok && temResult.TokenType == "text" {
+			ci := len(tokens[0].Children) - 1
+			tokens[0].Children[ci].Children = append(tokens[0].Children[ci].Children, Token{
+				TokenType:   "auto-order-list-item-text-line-wrapper",
+				NodeTagName: "div",
+				NodeClass:   "auto-order-list-item-text-line-wrapper",
+				Children:    []Token{}})
+			di := len(tokens[0].Children[ci].Children) - 1
+			text := []rune(strings.Replace(lines[i][originIndent:], " ", "&#8194;", temResult.IndentCount))
+			line := Line{Origin: text, Tokens: []Token{}}
+			line.LineParse()
+			tokens[0].Children[ci].Children[di].Children = line.Tokens
 		} else if !ok { // list结束
 			index = i
 			return index, tokens
@@ -1321,15 +1288,15 @@ func listParse(lines []string, index int, blockResult BlockResult) (int, []Token
 
 	i := index
 	for ; i < len(lines); i++ {
-		ok, temResult := isInList(lines[i])
-		if ok { // list的新一行
-			if temResult.IndentCount >= originIndent && temResult.IndentCount < originIndent+4 { // 新的列表项不是子列表
+		ok, temResult := isInBlock(lines[i])
+		if ok && temResult.TokenType == "list" { // list的新一行
+			if temResult.IndentCount >= originIndent && temResult.IndentCount < originIndent+4 { // list的新一行
 				tokens[0].Children = append(tokens[0].Children, Token{
 					TokenType:   "list-item",
 					NodeTagName: "li",
 					NodeClass:   "list-item list-item-level-" + strconv.Itoa(originLevel),
 					Children: []Token{
-						{TokenType: "list-item-text-wrapper", NodeTagName: "div", NodeClass: "list-item-text-wrapper", Children: []Token{}},
+						{TokenType: "list-item-text-line-wrapper", NodeTagName: "div", NodeClass: "list-item-text-line-wrapper title", Children: []Token{}},
 					},
 				})
 				text := []rune(lines[i])[2+temResult.IndentCount:]
@@ -1343,6 +1310,18 @@ func listParse(lines []string, index int, blockResult BlockResult) (int, []Token
 			} else if temResult.IndentCount < originIndent {
 				return i, tokens
 			}
+		} else if !ok && temResult.TokenType == "text" {
+			ci := len(tokens[0].Children) - 1
+			tokens[0].Children[ci].Children = append(tokens[0].Children[ci].Children, Token{
+				TokenType:   "list-item-text-line-wrapper",
+				NodeTagName: "div",
+				NodeClass:   "list-item-text-line-wrapper",
+				Children:    []Token{}})
+			di := len(tokens[0].Children[ci].Children) - 1
+			text := []rune(strings.Replace(lines[i][originIndent:], " ", "&#8194;", temResult.IndentCount))
+			line := Line{Origin: text, Tokens: []Token{}}
+			line.LineParse()
+			tokens[0].Children[ci].Children[di].Children = line.Tokens
 		} else { // list结束
 			index = i
 			return index, tokens
