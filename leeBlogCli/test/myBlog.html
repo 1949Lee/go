@@ -89,30 +89,30 @@
                 // range.setEnd(endNode,endIndex + 4);
                 // range.collapse(false);
             } else {
-                // let startIndex = null;
-                // let endIndex = null;
-                // let parent = selection.anchorNode.parentNode;
-                // // 获取到选中的行的下标
-                // for (let i = 0; i < parent.childNodes.length;i++){
-                //     if(parent.childNodes[i].nodeValue !== '\n') {
-                //         if (parent.childNodes[i].isSameNode(selection.anchorNode)) { // 开始用鼠标拖动选择行时，点击的行。
-                //             startIndex = i;
-                //         }
-                //         if (parent.childNodes[i].isSameNode(selection.focusNode)) { // 结束用鼠标拖动选择行时，离开的行。
-                //             endIndex = i
-                //         }
-                //     }
-                // }
-                // // 因为有可能是从下往上选拖动的鼠标，所以开始下标可能会比他
-                // if (startIndex > endIndex) {
-                //     let temp = startIndex;
-                //     startIndex = endIndex;
-                //     endIndex = temp;
-                // }
-                //
-                // for (let i = startIndex;i <= endIndex;i++) {
-                //     parent.childNodes[i].nodeValue = '    '+ parent.childNodes[i].nodeValue;
-                // }
+                let startIndex = null;
+                let endIndex = null;
+                let parent = selection.anchorNode.parentNode;
+                // 获取到选中的行的下标
+                for (let i = 0; i < parent.childNodes.length;i++){
+                    if (parent.childNodes[i].isSameNode(selection.anchorNode)) { // 开始用鼠标拖动选择行时，点击的行。
+                        startIndex = i;
+                    }
+                    if (parent.childNodes[i].isSameNode(selection.focusNode)) { // 结束用鼠标拖动选择行时，离开的行。
+                        endIndex = i
+                    }
+                }
+                // 因为有可能是从下往上选拖动的鼠标，所以开始下标可能会比他
+                if (startIndex > endIndex) {
+                    let temp = startIndex;
+                    startIndex = endIndex;
+                    endIndex = temp;
+                }
+
+                for (let i = startIndex;i <= endIndex;i++) {
+                    if(parent.childNodes[i].nodeValue !== '\n') {
+                        parent.childNodes[i].nodeValue = '    ' + parent.childNodes[i].nodeValue;
+                    }
+                }
 
             }
             e.preventDefault();
