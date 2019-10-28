@@ -908,7 +908,7 @@ func (t Token) updateWith(tokens ...Token) []Token {
 		t.Children = tokens
 		t.Text = ""
 		return []Token{t}
-	case "image": //	TODO 1 image的说明文案实现（实现不应该在这里，只是做提示），2 及其更新方式更新方式在这里做。3 一行多行图片要不要考虑处理。4 图片、链接、行内变色强调的条用顺序。
+	case "image":
 		t.Children = tokens
 		t.Text = ""
 		return []Token{t}
@@ -1122,7 +1122,7 @@ func isInBlock(lineText string) (bool, BlockResult) {
 			return true, BlockResult{TokenType: "block-quote"}
 		}
 	case '|': // 表格table
-	// TODO 表格转换待实现，这里需要做判断是否是表格
+		return true, BlockResult{TokenType: "table-block"}
 	case '`': // 代码块code-block
 		if realRune[1] == '`' && realRune[2] == '`' {
 			return true, BlockResult{TokenType: "code-block"}
@@ -1192,6 +1192,9 @@ func blockParse(lines []string, index int, blockResult BlockResult) (int, []Toke
 		return i, tokens
 	case "code-block":
 		i, tokens = codeBlockParse(lines, index, blockResult)
+		return i, tokens
+	case "table-block":
+		i, tokens = tableBlockParse(lines, index, blockResult)
 		return i, tokens
 	}
 	return index, nil
@@ -1434,6 +1437,7 @@ func styledBlockParse(lines []string, index int, _ BlockResult) (int, []Token) {
 	return index, tokens
 }
 
+// 代码块儿转换
 func codeBlockParse(lines []string, index int, _ BlockResult) (int, []Token) {
 	tokens := []Token{
 		{
@@ -1464,6 +1468,144 @@ func codeBlockParse(lines []string, index int, _ BlockResult) (int, []Token) {
 	}
 	tokens[0].Children[0].Text = buffer.String()
 	return index, tokens
+}
+
+// 表格块转换
+func tableBlockParse(lines []string, index int, _ BlockResult) (int, []Token) {
+	tokens := []Token{
+		{
+			TokenType:   "table-block",
+			NodeTagName: "table",
+			NodeClass:   "table-block",
+			Children: []Token{
+				// 表头
+				{
+					TokenType:   "table-block-thead",
+					NodeTagName: "thead",
+					NodeClass:   "table-block-thead",
+					Children: []Token{
+						// 表头唯一一行
+						{
+							TokenType:   "table-block-thead-tr",
+							NodeTagName: "tr",
+							NodeClass:   "table-block-thead-tr",
+							Children:    []Token{
+								// 表头每一单元格
+							},
+						},
+					},
+				},
+
+				// 表体
+				{
+					TokenType:   "table-block-tbody",
+					NodeTagName: "tbody",
+					NodeClass:   "table-block-tbody",
+					Children:    []Token{},
+				},
+			},
+		}}
+	//var buffer bytes.Buffer
+	i := index
+	re := regexp.MustCompile(`\s*([^|]*)\s*\|`)
+	colRegTemp := re.FindAllStringSubmatch(lines[i], -1)
+	i++
+
+	// 表格列的数量
+	colCount := len(colRegTemp) - 1
+	colTextAlign := getTableColTextAlign(colCount, lines[i], re)
+	i++
+	for j := 0; j < colCount; j++ {
+		thToken := Token{
+			TokenType:   "table-block-thead-th",
+			NodeTagName: "th",
+			NodeClass:   "table-block-thead-th",
+			Text:        strings.TrimRight(colRegTemp[j+1][1], " "),
+		}
+		if colTextAlign[j] != "" {
+			thToken.NodeAttrs = []NodeAttr{
+				{
+					Key:   "style",
+					Value: colTextAlign[j],
+				},
+			}
+		}
+		// 将表格标题单元格的文案继续转换
+		line := Line{Origin: []rune(thToken.Text), Tokens: []Token{}}
+		line.LineParse()
+		thToken.Children = line.Tokens
+		thToken.Text = ""
+		tokens[0].Children[0].Children[0].Children = append(tokens[0].Children[0].Children[0].Children, thToken)
+	}
+	for ; i < len(lines); i++ {
+		ok, temResult := isInBlock(lines[i])
+		if ok && temResult.TokenType == "table-block" { // 表格新的一行。
+			tokens[0].Children[1].Children = append(tokens[0].Children[1].Children, Token{
+				TokenType:   "table-block-tbody-tr",
+				NodeTagName: "tr",
+				NodeClass:   "table-block-tbody-tr",
+				Children:    []Token{}})
+			currTrIndex := len(tokens[0].Children[1].Children) - 1
+			tdRegTemp := re.FindAllStringSubmatch(lines[i], -1)
+			for j := 0; j < colCount; j++ {
+				tdToken := Token{
+					TokenType:   "table-block-tbody-td",
+					NodeTagName: "td",
+					NodeClass:   "table-block-tbody-td",
+					Text:        strings.TrimRight(tdRegTemp[j+1][1], " "),
+				}
+				if colTextAlign[j] != "" {
+					tdToken.NodeAttrs = []NodeAttr{
+						{
+							Key:   "style",
+							Value: colTextAlign[j],
+						},
+					}
+				}
+				// 将表格标题单元格的文案继续转换
+				line := Line{Origin: []rune(tdToken.Text), Tokens: []Token{}}
+				line.LineParse()
+				tdToken.Children = line.Tokens
+				tdToken.Text = ""
+				tokens[0].Children[1].Children[currTrIndex].Children = append(tokens[0].Children[1].Children[currTrIndex].Children, tdToken)
+			}
+		} else {
+			index = i + 1
+			return index, tokens
+		}
+	}
+	//tokens[0].Children[0].Text = buffer.String()
+	index = i
+	return index, tokens
+}
+
+// 根据表格第二行的配置，得到每列的对齐样式。
+func getTableColTextAlign(colCount int, line string, re *regexp.Regexp) []string {
+	colRegTemp := re.FindAllStringSubmatch(line, -1)
+	colTextAlign := make([]string, colCount)
+	for i := 0; i < colCount; i++ {
+
+		// 左对齐
+		if strings.Contains(colRegTemp[i+1][1], "-:") {
+
+			// 居中
+			if strings.Contains(colRegTemp[i+1][1], ":-") {
+				colTextAlign[i] = "text-align:center;"
+				continue
+			} else {
+				// 左对齐
+				colTextAlign[i] = "text-align:left;"
+				continue
+			}
+		}
+
+		// 右对齐
+		if strings.Contains(colRegTemp[i+1][1], ":-") {
+			colTextAlign[i] = "text-align:right;"
+			continue
+		}
+	}
+	return colTextAlign
 }
 
 // 根据传入的字符串，解析并返回得到的html node attr
