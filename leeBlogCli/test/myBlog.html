@@ -9,7 +9,7 @@
           href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.10/styles/default.min.css">
     <style>
         #origin {
-            border: 1px solid rgba(0,0,0,.267);
+            border: 1px solid rgba(0, 0, 0, .267);
             width: 40vw;
             min-height: 90vh;
             max-height: 90vh;
@@ -21,16 +21,18 @@
             user-select: text;
             white-space: pre-wrap;
             overflow-wrap: break-word;
-            overflow-y: auto ;
+            overflow-y: auto;
         }
-        #result{
-            border: 1px solid rgba(0,0,0,.267);
+
+        #result {
+            border: 1px solid rgba(0, 0, 0, .267);
             display: inline-block;
             width: 40vw;
             height: 90vh;
             overflow-y: auto;
             text-align: left;
         }
+
         #result .content {
 
         }
@@ -38,8 +40,9 @@
 </head>
 <body>
 <div>
-    <div id="origin" onkeydown="textInput(event)" contenteditable="true" onpaste="textPaste(event)" onkeydown="textInput(event)"></div>
-<!--    <textarea id="origin" onkeydown="textInput(event)" ></textarea>-->
+    <div id="origin" onkeydown="textInput(event)" contenteditable="true" onpaste="textPaste(event)"
+         onkeydown="textInput(event)"></div>
+    <!--    <textarea id="origin" onkeydown="textInput(event)" ></textarea>-->
     <div id="result">
     </div>
 </div>
@@ -68,7 +71,7 @@
                     document.querySelectorAll('pre code').forEach((block) => {
                         hljs.highlightBlock(block);
                     });
-                },0);
+                }, 0);
             }
         };
         xhr.send(JSON.stringify({text: document.getElementById('origin').innerText}))
@@ -76,13 +79,13 @@
     }
 
     function textInput(e) {
-        if(e.key.toUpperCase() === 'TAB') {
+        if (e.key.toUpperCase() === 'TAB') {
             let selection = window.getSelection();
-            if (selection.type === 'Caret'){
+            if (selection.type === 'Caret') {
                 let endNode = selection.anchorNode;
                 let endIndex = selection.anchorOffset;
-                selection.anchorNode.nodeValue = '    '+ selection.anchorNode.nodeValue;
-                selection.collapse(endNode,endIndex + 4)
+                selection.anchorNode.nodeValue = '    ' + selection.anchorNode.nodeValue;
+                selection.collapse(endNode, endIndex + 4)
                 // let range = document.createRange();
                 // let range = selection.getRangeAt(0);
                 // // range.selectNode(endNode);
@@ -93,7 +96,7 @@
                 let endIndex = null;
                 let parent = selection.anchorNode.parentNode;
                 // 获取到选中的行的下标
-                for (let i = 0; i < parent.childNodes.length;i++){
+                for (let i = 0; i < parent.childNodes.length; i++) {
                     if (parent.childNodes[i].isSameNode(selection.anchorNode)) { // 开始用鼠标拖动选择行时，点击的行。
                         startIndex = i;
                     }
@@ -108,8 +111,8 @@
                     endIndex = temp;
                 }
 
-                for (let i = startIndex;i <= endIndex;i++) {
-                    if(parent.childNodes[i].nodeValue !== '\n') {
+                for (let i = startIndex; i <= endIndex; i++) {
+                    if (parent.childNodes[i].nodeValue !== '\n') {
                         parent.childNodes[i].nodeValue = '    ' + parent.childNodes[i].nodeValue;
                     }
                 }
@@ -118,12 +121,13 @@
             e.preventDefault();
         }
     }
+
     function textPaste(e) {
         // 阻止默认粘贴
         e.preventDefault();
         // 粘贴事件有一个clipboardData的属性，提供了对剪贴板的访问
         // clipboardData的getData(fomat) 从剪贴板获取指定格式的数据
-        let text =  (e.originalEvent || e).clipboardData.getData('text/plain') || prompt('在这里输入文本');
+        let text = (e.originalEvent || e).clipboardData.getData('text/plain') || prompt('在这里输入文本');
         // 插入
         document.execCommand("insertText", false, text);
     }

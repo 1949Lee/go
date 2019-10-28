@@ -1470,7 +1470,7 @@ func codeBlockParse(lines []string, index int, _ BlockResult) (int, []Token) {
 	return index, tokens
 }
 
-// 表格块转换
+// 表格块转换 colspan="1"
 func tableBlockParse(lines []string, index int, _ BlockResult) (int, []Token) {
 	tokens := []Token{
 		{

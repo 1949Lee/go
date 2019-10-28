@@ -6,7 +6,7 @@ import (
 )
 
 func main() {
-	a := "| 左对 齐 dsad | 右对齐 ||"
+	a := "| 左对 齐 dsad :-0-:| 右对齐 ||"
 	re := regexp.MustCompile(`\s*([^|]*)\s*\|`)
 	arr := re.FindAllStringSubmatch(a, -1)
 	fmt.Println(arr)
