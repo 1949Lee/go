@@ -500,6 +500,63 @@ func (l *Line) LinkTextParse() {
 	})
 }
 
+//行内底色变色强调的转换方法，会自行调用LinkTextParse
+func (l *Line) BackgroundStrongParse() {
+	l.state = LineState.Start
+	l.textStart = -1
+	for i := 0; i < len(l.Origin); i++ {
+		ch := l.Origin[i]
+		if ch == '\\' && i < len(l.Origin)-1 && l.Origin[i+1] == markdownRunes.backgroundRune {
+			l.Origin = append(l.Origin[:i], l.Origin[i+1:]...)
+		}
+		switch l.state {
+		case LineState.Start:
+			l.unresolvedTokens = []unresolvedToken{}
+			switch ch {
+			case '`':
+				l.state = LineState.BackgroundStrongEnd
+
+				// 2. 并且还要把*之前的token的text（若有）。
+				if l.textStart != -1 {
+					l.appendNewToken(&Token{Text: string(l.Origin[l.textStart:i]), TokenType: "text"})
+					l.textStart = -1
+				}
+
+				continue
+			default:
+				// 如果读到非语法字符，则判断是否为第一个，若是第一个，则记录位置。否则继续扫描下一个字符。
+				if l.textStart == -1 {
+					l.textStart = i
+				}
+				continue
+			}
+		case LineState.BackgroundStrongEnd:
+			switch ch {
+			case '`':
+				if l.textStart != -1 {
+					text := string(l.Origin[l.textStart:i])
+					l.appendNewToken(&Token{Text: text, TokenType: "background-strong"})
+					l.state = LineState.Start
+					l.unresolvedTokens = []unresolvedToken{}
+					l.textStart = -1
+				}
+				continue
+			default:
+				// 如果读到非语法字符，则判断是否为第一个，若是第一个，则记录位置。否则继续扫描下一个字符。
+				if l.textStart == -1 {
+					l.textStart = i
+				}
+				continue
+			}
+		}
+
+	}
+	l.resolveLineToken()
+	l.parseWithOther(func(line *Line) {
+		line.LinkTextParse()
+	})
+}
+
 // 链接转换方法，会自行调用LinkTextParse
 func (l *Line) ImageParse() {
 	l.state = LineState.Start
@@ -639,68 +696,11 @@ func (l *Line) ImageParse() {
 	}
 	l.resolveLineToken()
 	l.parseWithOther(func(line *Line) {
-		line.LinkTextParse()
+		line.BackgroundStrongParse()
 	})
 }
 
-//行内底色变色强调的转换方法，会自行调用ImageParse
-func (l *Line) BackgroundStrongParse() {
-	l.state = LineState.Start
-	l.textStart = -1
-	for i := 0; i < len(l.Origin); i++ {
-		ch := l.Origin[i]
-		if ch == '\\' && i < len(l.Origin)-1 && l.Origin[i+1] == markdownRunes.backgroundRune {
-			l.Origin = append(l.Origin[:i], l.Origin[i+1:]...)
-		}
-		switch l.state {
-		case LineState.Start:
-			l.unresolvedTokens = []unresolvedToken{}
-			switch ch {
-			case '`':
-				l.state = LineState.BackgroundStrongEnd
-
-				// 2. 并且还要把*之前的token的text（若有）。
-				if l.textStart != -1 {
-					l.appendNewToken(&Token{Text: string(l.Origin[l.textStart:i]), TokenType: "text"})
-					l.textStart = -1
-				}
-
-				continue
-			default:
-				// 如果读到非语法字符，则判断是否为第一个，若是第一个，则记录位置。否则继续扫描下一个字符。
-				if l.textStart == -1 {
-					l.textStart = i
-				}
-				continue
-			}
-		case LineState.BackgroundStrongEnd:
-			switch ch {
-			case '`':
-				if l.textStart != -1 {
-					text := string(l.Origin[l.textStart:i])
-					l.appendNewToken(&Token{Text: text, TokenType: "background-strong"})
-					l.state = LineState.Start
-					l.unresolvedTokens = []unresolvedToken{}
-					l.textStart = -1
-				}
-				continue
-			default:
-				// 如果读到非语法字符，则判断是否为第一个，若是第一个，则记录位置。否则继续扫描下一个字符。
-				if l.textStart == -1 {
-					l.textStart = i
-				}
-				continue
-			}
-		}
-
-	}
-	l.resolveLineToken()
-	l.parseWithOther(func(line *Line) {
-		line.ImageParse()
-	})
-}
-
-//多级标题转换方法，会自行调用BackgroundStrongParse
+//多级标题转换方法，会自行调用ImageParse
 func (l *Line) HeaderTitleParse() {
 	l.state = LineState.Start
 	l.textStart = -1
@@ -718,7 +718,7 @@ func (l *Line) HeaderTitleParse() {
 					if ch == ' ' { // 连续#号之后，必须跟一个空格。
 						l.textStart = i + 1
 					} else { // 连续#号之后，若没有跟空格，则直接进行其他转换。
-						l.BackgroundStrongParse()
+						l.ImageParse()
 						return
 					}
 				}
@@ -729,7 +729,7 @@ func (l *Line) HeaderTitleParse() {
 		}
 		l.appendNewToken(&Token{Text: string(l.Origin[l.textStart:]), NodeTagName: "h" + strconv.Itoa(headerLevel), TokenType: "header"})
 		l.parseWithOther(func(line *Line) {
-			line.BackgroundStrongParse()
+			line.ImageParse()
 		})
 	} else { // 行开头不是#，直接进行其他转换
 		for i := 0; i < len(l.Origin); i++ {
@@ -738,7 +738,7 @@ func (l *Line) HeaderTitleParse() {
 				l.Origin = append(l.Origin[:i], l.Origin[i+1:]...)
 			}
 		}
-		l.BackgroundStrongParse()
+		l.ImageParse()
 	}
 
 }
@@ -910,7 +910,7 @@ func (t Token) updateWith(tokens ...Token) []Token {
 		return []Token{t}
 	case "image": //	TODO 1 image的说明文案实现（实现不应该在这里，只是做提示），2 及其更新方式更新方式在这里做。3 一行多行图片要不要考虑处理。4 图片、链接、行内变色强调的条用顺序。
 		t.Children = tokens
-		//t.Text = ""
+		t.Text = ""
 		return []Token{t}
 	}
 	return tokens
@@ -988,7 +988,7 @@ func lineToHtml(tokens []Token) string {
 		builder.WriteString(tokensToHtml(tokens))
 	} else if ok, index := s.has("image"); ok {
 		if len(s) == 1 {
-			builder.WriteString(`<div class="block">`)
+			builder.WriteString(`<div class="block image-block">`)
 			builder.WriteString(tokensToHtml(tokens))
 			builder.WriteString(`</div>`)
 		} else {
@@ -998,7 +998,7 @@ func lineToHtml(tokens []Token) string {
 				builder.WriteString(tokensToHtml(tokens[:index]))
 				builder.WriteString(`</div>`)
 			}
-			builder.WriteString(`<div class="block image-block">`)
+			builder.WriteString(`<div class="block image-list-block">`)
 			builder.WriteString(tokensToHtml([]Token{tokens[index]}))
 			builder.WriteString(`</div>`)
 			if index < len(s)-1 {
@@ -1035,7 +1035,8 @@ func tokensToHtml(tokens []Token) string {
 				}
 			}
 			builder.WriteString("/>")
-		} else if tokens[i].TokenType == "image" {
+		} else if tokens[i].TokenType == "image" { // image的特殊处理
+			builder.WriteString(`<div class="image-wrapper">`)
 			builder.WriteString("<")
 			builder.WriteString(tokens[i].NodeTagName)
 			builder.WriteString(` class="`)
@@ -1051,6 +1052,12 @@ func tokensToHtml(tokens []Token) string {
 				}
 			}
 			builder.WriteString("/>")
+			builder.WriteString(`<div class="image-text-wrapper">`)
+			builder.WriteString(tokens[i].Text)
+			if len(tokens[i].Children) > 0 {
+				builder.WriteString(tokensToHtml(tokens[i].Children))
+			}
+			builder.WriteString(`</div></div>`)
 		} else {
 			builder.WriteString("<")
 			builder.WriteString(tokens[i].NodeTagName)
