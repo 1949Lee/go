@@ -1547,20 +1547,23 @@ func tableBlockParse(lines []string, index int, _ BlockResult) (int, []Token) {
 				Children:    []Token{}})
 			currTrIndex := len(tokens[0].Children[1].Children) - 1
 			tdRegTemp := re.FindAllStringSubmatch(lines[i], -1)
-			for j := 0; j < colCount; j++ {
+			for j := 0; j < len(tdRegTemp)-1; j++ {
 				tdToken := Token{
 					TokenType:   "table-block-tbody-td",
 					NodeTagName: "td",
 					NodeClass:   "table-block-tbody-td",
 					Text:        strings.TrimRight(tdRegTemp[j+1][1], " "),
 				}
+				//if strings.
+				if attrs, str := getSpan(tdToken.Text); attrs != nil {
+					tdToken.NodeAttrs = append(tdToken.NodeAttrs, attrs...)
+					tdToken.Text = str
+				}
 				if colTextAlign[j] != "" {
-					tdToken.NodeAttrs = []NodeAttr{
-						{
-							Key:   "style",
-							Value: colTextAlign[j],
-						},
-					}
+					tdToken.NodeAttrs = append(tdToken.NodeAttrs, NodeAttr{
+						Key:   "style",
+						Value: colTextAlign[j],
+					})
 				}
 				// 将表格标题单元格的文案继续转换
 				line := Line{Origin: []rune(tdToken.Text), Tokens: []Token{}}
@@ -1577,6 +1580,29 @@ func tableBlockParse(lines []string, index int, _ BlockResult) (int, []Token) {
 	//tokens[0].Children[0].Text = buffer.String()
 	index = i
 	return index, tokens
+}
+
+//是否含有colspan或rowspan，有则返回其值
+func getSpan(str string) ([]NodeAttr, string) {
+	re := regexp.MustCompile(`:-(\d+)-:|:\+(\d)+\+:`)
+	temp := re.FindAllStringSubmatch(str, -1)
+	str = re.ReplaceAllString(str, "")
+	attrs := make([]NodeAttr, 0)
+	if temp != nil {
+		for _, v := range temp {
+			if v[1] != "" {
+				attrs = append(attrs, NodeAttr{Key: "colspan", Value: v[1]})
+			}
+
+			if v[2] != "" {
+				attrs = append(attrs, NodeAttr{Key: "rowspan", Value: v[2]})
+			}
+		}
+		return attrs, str
+	} else {
+		return nil, str
+	}
+
 }
 
 // 根据表格第二行的配置，得到每列的对齐样式。
