@@ -1,3 +1,8 @@
+/*
+@author 李佳轩
+本文件为parser用到的自定义结构体和全局变量
+*/
+
 package parser
 
 // 全局变量

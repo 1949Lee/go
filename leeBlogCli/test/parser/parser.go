@@ -1,3 +1,8 @@
+/*
+@author 李佳轩
+本文件为parser转换markdown语法相关的一些函数和方法。
+*/
+
 package parser
 
 import (

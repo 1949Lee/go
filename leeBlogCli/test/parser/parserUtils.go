@@ -1,3 +1,8 @@
+/*
+@author 李佳轩
+本文件为parser中用到的切片的相关方法。
+*/
+
 package parser
 
 import "bytes"
