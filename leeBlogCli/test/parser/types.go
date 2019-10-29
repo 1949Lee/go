@@ -97,7 +97,7 @@ type Line struct {
 	Tokens []Token
 
 	// 行未处理的准markdown字符数组
-	unresolvedTokens []unresolvedToken
+	unresolvedTokens unresolvedTokenSlice
 
 	// 行临时的字符内容的开始下标
 	textStart int
@@ -116,6 +116,9 @@ type unresolvedToken struct {
 	tokenType         string
 	contentTokenStart int
 }
+
+// unresolvedToken数组
+type unresolvedTokenSlice []unresolvedToken
 
 // Token的html节点的属性
 type NodeAttr struct {

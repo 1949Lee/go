@@ -7,15 +7,6 @@ import (
 	"strings"
 )
 
-func (s TokenSlice) has(tokenType string) (bool, int) {
-	for i, t := range s {
-		if t.TokenType == tokenType {
-			return true, i
-		}
-	}
-	return false, -1
-}
-
 // 根据当前line的Tokens生成html
 func (l *Line) ToHtml() string {
 	return lineToHtml(l.Tokens)
@@ -45,7 +36,7 @@ func (l *Line) ItalicTextParse() {
 		}
 		switch l.state {
 		case LineState.Start:
-			l.unresolvedTokens = []unresolvedToken{}
+			l.unresolvedTokens = unresolvedTokenSlice{}
 			switch ch {
 			case '*':
 
@@ -124,7 +115,7 @@ func (l *Line) DeleteTextParse() {
 		}
 		switch l.state {
 		case LineState.Start:
-			l.unresolvedTokens = []unresolvedToken{}
+			l.unresolvedTokens = unresolvedTokenSlice{}
 			switch ch {
 			case '~':
 
@@ -220,7 +211,7 @@ func (l *Line) LinkTextParse() {
 	l.state = LineState.Start
 	l.textStart = -1
 	tempToken := Token{}
-	l.unresolvedTokens = []unresolvedToken{}
+	l.unresolvedTokens = unresolvedTokenSlice{}
 	for i := 0; i < len(l.Origin); i++ {
 		ch := l.Origin[i]
 		if ch == '\\' && i < len(l.Origin)-1 && l.Origin[i+1] == markdownRunes.linkRune {
@@ -266,7 +257,7 @@ func (l *Line) LinkTextParse() {
 						l.state = LineState.Start
 						l.textStart = -1
 						tempToken = Token{}
-						l.unresolvedTokens = []unresolvedToken{}
+						l.unresolvedTokens = unresolvedTokenSlice{}
 						l.textStart = -1
 					} else {
 						// 如果已经读到了行的最后一个字符，则进行一些未完成的token处理
@@ -278,12 +269,12 @@ func (l *Line) LinkTextParse() {
 								l.appendNewToken(&Token{Text: "[" + string(l.Origin[l.textStart:]) + "]", TokenType: "text"})
 							}
 							l.textStart = -1
-							l.unresolvedTokens = []unresolvedToken{}
+							l.unresolvedTokens = unresolvedTokenSlice{}
 						}
 						l.state = LineState.Start
 						l.textStart = -1
 						tempToken = Token{}
-						l.unresolvedTokens = []unresolvedToken{}
+						l.unresolvedTokens = unresolvedTokenSlice{}
 					}
 				}
 				continue
@@ -302,7 +293,7 @@ func (l *Line) LinkTextParse() {
 						l.appendNewToken(&Token{Text: "[" + string(l.Origin[l.textStart:]), TokenType: "text"})
 					}
 					l.textStart = -1
-					l.unresolvedTokens = []unresolvedToken{}
+					l.unresolvedTokens = unresolvedTokenSlice{}
 				}
 				continue
 			}
@@ -328,7 +319,7 @@ func (l *Line) LinkTextParse() {
 				l.state = LineState.Start
 				l.textStart = -1
 				tempToken = Token{}
-				l.unresolvedTokens = []unresolvedToken{}
+				l.unresolvedTokens = unresolvedTokenSlice{}
 				continue
 			default:
 				// 如果读到非语法字符，则记录位置。否则继续扫描下一个字符。
@@ -344,7 +335,7 @@ func (l *Line) LinkTextParse() {
 						l.appendNewToken(&Token{Text: "[" + tempToken.Text + "](" + string(l.Origin[l.textStart:]), TokenType: "text"})
 					}
 					l.textStart = -1
-					l.unresolvedTokens = []unresolvedToken{}
+					l.unresolvedTokens = unresolvedTokenSlice{}
 				}
 				continue
 			}
@@ -368,7 +359,7 @@ func (l *Line) BackgroundStrongParse() {
 		}
 		switch l.state {
 		case LineState.Start:
-			l.unresolvedTokens = []unresolvedToken{}
+			l.unresolvedTokens = unresolvedTokenSlice{}
 			switch ch {
 			case '`':
 				l.state = LineState.BackgroundStrongEnd
@@ -394,7 +385,7 @@ func (l *Line) BackgroundStrongParse() {
 					text := string(l.Origin[l.textStart:i])
 					l.appendNewToken(&Token{Text: text, TokenType: "background-strong"})
 					l.state = LineState.Start
-					l.unresolvedTokens = []unresolvedToken{}
+					l.unresolvedTokens = unresolvedTokenSlice{}
 					l.textStart = -1
 				}
 				continue
@@ -419,7 +410,7 @@ func (l *Line) ImageParse() {
 	l.state = LineState.Start
 	l.textStart = -1
 	tempToken := Token{}
-	l.unresolvedTokens = []unresolvedToken{}
+	l.unresolvedTokens = unresolvedTokenSlice{}
 	for i := 0; i < len(l.Origin); i++ {
 		ch := l.Origin[i]
 		if ch == '\\' && i < len(l.Origin)-1 && l.Origin[i+1] == markdownRunes.imageRune {
@@ -456,17 +447,17 @@ func (l *Line) ImageParse() {
 					if l.textStart != -1 && i+1 < len(l.Origin) && l.Origin[i+1] == '(' {
 						tempToken.Text = string(l.Origin[l.textStart:i])
 						tempToken.TokenType = "image"
-						l.unresolvedTokens = []unresolvedToken{}
+						l.unresolvedTokens = unresolvedTokenSlice{}
 						l.unresolvedTokens = append(l.unresolvedTokens, unresolvedToken{text: '(', start: true})
 						l.state = LineState.ImageHrefEnd
 						i++
 						l.textStart = -1
 					} else if l.textStart != -1 && i+1 < len(l.Origin) && l.Origin[i+1] != '(' {
-						l.appendNewToken(&Token{Text: joinTokens(l.unresolvedTokens, "") + string(l.Origin[l.textStart:i]) + "]", TokenType: "text"})
+						l.appendNewToken(&Token{Text: l.unresolvedTokens.joinTokens("") + string(l.Origin[l.textStart:i]) + "]", TokenType: "text"})
 						l.state = LineState.Start
 						l.textStart = -1
 						tempToken = Token{}
-						l.unresolvedTokens = []unresolvedToken{}
+						l.unresolvedTokens = unresolvedTokenSlice{}
 						l.textStart = -1
 					} else {
 						// 如果已经读到了行的最后一个字符，则进行一些未完成的token处理
@@ -478,12 +469,12 @@ func (l *Line) ImageParse() {
 								l.appendNewToken(&Token{Text: "[" + string(l.Origin[l.textStart:]) + "]", TokenType: "text"})
 							}
 							l.textStart = -1
-							l.unresolvedTokens = []unresolvedToken{}
+							l.unresolvedTokens = unresolvedTokenSlice{}
 						}
 						l.state = LineState.Start
 						l.textStart = -1
 						tempToken = Token{}
-						l.unresolvedTokens = []unresolvedToken{}
+						l.unresolvedTokens = unresolvedTokenSlice{}
 					}
 				}
 				continue
@@ -497,13 +488,13 @@ func (l *Line) ImageParse() {
 				if i+1 == len(l.Origin) {
 					if len(l.Tokens) > 0 && l.Tokens[len(l.Tokens)-1].TokenType == "text" {
 
-						l.Tokens[len(l.Tokens)-1].Text += joinTokens(l.unresolvedTokens, "") + string(l.Origin[l.textStart:])
+						l.Tokens[len(l.Tokens)-1].Text += l.unresolvedTokens.joinTokens("") + string(l.Origin[l.textStart:])
 						updateToken(&l.Tokens[len(l.Tokens)-1])
 					} else {
-						l.appendNewToken(&Token{Text: joinTokens(l.unresolvedTokens, "") + string(l.Origin[l.textStart:]), TokenType: "text"})
+						l.appendNewToken(&Token{Text: l.unresolvedTokens.joinTokens("") + string(l.Origin[l.textStart:]), TokenType: "text"})
 					}
 					l.textStart = -1
-					l.unresolvedTokens = []unresolvedToken{}
+					l.unresolvedTokens = unresolvedTokenSlice{}
 				}
 				continue
 			}
@@ -528,7 +519,7 @@ func (l *Line) ImageParse() {
 				l.state = LineState.Start
 				l.textStart = -1
 				tempToken = Token{}
-				l.unresolvedTokens = []unresolvedToken{}
+				l.unresolvedTokens = unresolvedTokenSlice{}
 				continue
 			default:
 				// 如果读到非语法字符，则记录位置。否则继续扫描下一个字符。
@@ -544,7 +535,7 @@ func (l *Line) ImageParse() {
 						l.appendNewToken(&Token{Text: "[" + tempToken.Text + "](" + string(l.Origin[l.textStart:]), TokenType: "text"})
 					}
 					l.textStart = -1
-					l.unresolvedTokens = []unresolvedToken{}
+					l.unresolvedTokens = unresolvedTokenSlice{}
 				}
 				continue
 			}
@@ -641,10 +632,10 @@ func (l *Line) confirmItalicType(i int) int {
 		if len(l.unresolvedTokens) > 0 {
 
 			//遗留的'开始*'需要放到内容的前方
-			temp = joinTokens(l.unresolvedTokens, "") + string(l.Origin[l.textStart:originIndex])
+			temp = l.unresolvedTokens.joinTokens("") + string(l.Origin[l.textStart:originIndex])
 
 			//制空开始数组。
-			l.unresolvedTokens = []unresolvedToken{}
+			l.unresolvedTokens = unresolvedTokenSlice{}
 		} else {
 			temp = string(l.Origin[l.textStart:originIndex])
 		}
@@ -699,10 +690,10 @@ func (l *Line) resolveLineToken() {
 	if len(l.unresolvedTokens) > 0 {
 		//l.Tokens = append(l.Tokens, "*")
 		if len(l.Tokens) > 0 && l.Tokens[len(l.Tokens)-1].TokenType == "text" {
-			l.Tokens[len(l.Tokens)-1].Text += joinTokens(l.unresolvedTokens, "")
+			l.Tokens[len(l.Tokens)-1].Text += l.unresolvedTokens.joinTokens("")
 			updateToken(&l.Tokens[len(l.Tokens)-1])
 		} else {
-			l.appendNewToken(&Token{Text: joinTokens(l.unresolvedTokens, ""), TokenType: "text"})
+			l.appendNewToken(&Token{Text: l.unresolvedTokens.joinTokens(""), TokenType: "text"})
 		}
 	}
 	if l.textStart != -1 {
@@ -771,21 +762,6 @@ func (t Token) updateWith(tokens ...Token) TokenSlice {
 		return TokenSlice{t}
 	}
 	return tokens
-}
-
-// 将传入的token数组转化为字符串，数组中的每一项转化为字符串之后用str连接起来形成一个新的字符串
-func joinTokens(p []unresolvedToken, str string) string {
-	result := ""
-	var buffer bytes.Buffer
-	for _, t := range p {
-		buffer.WriteString(string(t.text))
-		if str != "" {
-			buffer.WriteString(str)
-		}
-	}
-	result = buffer.String()
-
-	return result
 }
 
 // 根据传入的token的不同类型来做相应的处理
