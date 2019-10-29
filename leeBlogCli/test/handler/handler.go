@@ -46,9 +46,9 @@ func ReadMarkdownText(writer http.ResponseWriter, r *http.Request) {
 
 	dataList, html := parser.MarkdownParse(param.Text)
 	result.Data = struct {
-		Text         string           `json:"text"`
-		List         [][]parser.Token `json:"list"`
-		MarkDownHtml string           `json:"html"`
+		Text         string              `json:"text"`
+		List         []parser.TokenSlice `json:"list"`
+		MarkDownHtml string              `json:"html"`
 	}{
 		Text:         "success",
 		List:         dataList,

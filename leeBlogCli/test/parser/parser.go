@@ -723,9 +723,9 @@ func (l *Line) appendNewToken(t *Token) {
 
 // 将当前行的Tokens进行其他Markdown语法的二次转换、转换的方法为参数。转换后，当前行的Tokens将会更新。
 func (l *Line) parseWithOther(parseFunc func(*Line)) {
-	tokens := make([]Token, 0)
+	tokens := make(TokenSlice, 0)
 	for i := range l.Tokens {
-		lineText := Line{Origin: []rune(l.Tokens[i].Text), Tokens: []Token{}}
+		lineText := Line{Origin: []rune(l.Tokens[i].Text), Tokens: TokenSlice{}}
 		parseFunc(&lineText)
 		tokens = append(tokens, l.Tokens[i].updateWith(lineText.Tokens...)...)
 	}
@@ -733,7 +733,7 @@ func (l *Line) parseWithOther(parseFunc func(*Line)) {
 }
 
 // 用新的token去更新某个token
-func (t Token) updateWith(tokens ...Token) []Token {
+func (t Token) updateWith(tokens ...Token) TokenSlice {
 	if t.TokenType == "text" {
 		return tokens
 	}
@@ -764,11 +764,11 @@ func (t Token) updateWith(tokens ...Token) []Token {
 	case "web-link", "background-strong", "header":
 		t.Children = tokens
 		t.Text = ""
-		return []Token{t}
+		return TokenSlice{t}
 	case "image":
 		t.Children = tokens
 		t.Text = ""
-		return []Token{t}
+		return TokenSlice{t}
 	}
 	return tokens
 }
@@ -822,7 +822,7 @@ func updateToken(t *Token) {
 }
 
 // 将传入的行转换为html
-func LinesToHtml(lines [][]Token) string {
+func LinesToHtml(lines []TokenSlice) string {
 	var builder strings.Builder
 	builder.WriteString(`<div class="content">`)
 	for i := range lines {
@@ -833,7 +833,7 @@ func LinesToHtml(lines [][]Token) string {
 }
 
 // 将传入的token数组转化为html
-func lineToHtml(tokens []Token) string {
+func lineToHtml(tokens TokenSlice) string {
 	var builder strings.Builder
 	s := TokenSlice(tokens)
 	if tokens[0].TokenType == "empty-line-br" {
@@ -856,7 +856,7 @@ func lineToHtml(tokens []Token) string {
 				builder.WriteString(`</div>`)
 			}
 			builder.WriteString(`<div class="block image-list-block">`)
-			builder.WriteString(tokensToHtml([]Token{tokens[index]}))
+			builder.WriteString(tokensToHtml(TokenSlice{tokens[index]}))
 			builder.WriteString(`</div>`)
 			if index < len(s)-1 {
 				builder.WriteString(`<div class="block">`)
@@ -873,7 +873,7 @@ func lineToHtml(tokens []Token) string {
 }
 
 // 将token转化为html
-func tokensToHtml(tokens []Token) string {
+func tokensToHtml(tokens TokenSlice) string {
 	var builder strings.Builder
 	for i := range tokens {
 		if tokens[i].TokenType == "empty-line-br" {
@@ -993,22 +993,22 @@ func isInBlock(lineText string) (bool, BlockResult) {
 }
 
 // 接受markdown字符串，并将之转化为html
-func MarkdownParse(markdownText string) ([][]Token, string) {
+func MarkdownParse(markdownText string) ([]TokenSlice, string) {
 	//scanner := bufio.NewScanner(strings.NewReader(markdownText))
-	//dataList := make([][]Token, 0)
+	//dataList := make([]TokenSlice, 0)
 	//for scanner.Scan() {
 	//	lineText := scanner.Text()
-	//	line := Line{Origin: []rune(lineText), Tokens: []Token{}}
+	//	line := Line{Origin: []rune(lineText), Tokens: TokenSlice{}}
 	//	line.LineParse()
 	//	dataList = append(dataList, line.Tokens)
 	//}
 
 	//这种split的方法比bufio那种读取块100-500微秒。
 	list := strings.Split(markdownText, "\n")
-	dataList := make([][]Token, 0)
+	dataList := make([]TokenSlice, 0)
 	for i := 0; i < len(list); i++ {
 		if ok, blockResult := isInBlock(list[i]); ok {
-			var tokens []Token
+			var tokens TokenSlice
 			i, tokens = blockParse(list, i, blockResult)
 			i--
 			dataList = append(dataList, tokens)
@@ -1016,18 +1016,18 @@ func MarkdownParse(markdownText string) ([][]Token, string) {
 
 			line := Line{
 				Origin: []rune(strings.Replace(list[i], " ", "&#8194;", blockResult.IndentCount)),
-				Tokens: []Token{}}
+				Tokens: TokenSlice{}}
 			line.LineParse()
 			dataList = append(dataList, line.Tokens)
 		}
 	}
-	return [][]Token{}, LinesToHtml(dataList)
+	return []TokenSlice{}, LinesToHtml(dataList)
 }
 
 // 将多行转换为块。
-func blockParse(lines []string, index int, blockResult BlockResult) (int, []Token) {
+func blockParse(lines []string, index int, blockResult BlockResult) (int, TokenSlice) {
 	var (
-		tokens []Token
+		tokens TokenSlice
 		i      int
 	)
 	switch blockResult.TokenType {
@@ -1054,14 +1054,14 @@ func blockParse(lines []string, index int, blockResult BlockResult) (int, []Toke
 }
 
 //有序列表转换方法
-func autoOrderListParse(lines []string, index int, blockResult BlockResult, level []string) (int, []Token) {
+func autoOrderListParse(lines []string, index int, blockResult BlockResult, level []string) (int, TokenSlice) {
 	originLevel := blockResult.IndentCount/4 + 1
-	tokens := []Token{
+	tokens := TokenSlice{
 		{
 			TokenType:   "auto-order-list",
 			NodeTagName: "ol",
 			NodeClass:   "auto-order-list list-level-" + strconv.Itoa(originLevel),
-			Children:    []Token{},
+			Children:    TokenSlice{},
 		}}
 	originIndent := blockResult.IndentCount
 
@@ -1074,12 +1074,12 @@ func autoOrderListParse(lines []string, index int, blockResult BlockResult, leve
 					TokenType:   "auto-order-list-item",
 					NodeTagName: "li",
 					NodeClass:   "auto-order-list-item list-item-level-" + strconv.Itoa(originLevel),
-					Children: []Token{
-						{TokenType: "auto-order-list-item-text-line-wrapper", NodeTagName: "div", NodeClass: "auto-order-list-item-text-line-wrapper", Children: []Token{}},
+					Children: TokenSlice{
+						{TokenType: "auto-order-list-item-text-line-wrapper", NodeTagName: "div", NodeClass: "auto-order-list-item-text-line-wrapper", Children: TokenSlice{}},
 					},
 				})
 				text := []rune(lines[i])[2+temResult.IndentCount:]
-				line := Line{Origin: text, Tokens: []Token{}}
+				line := Line{Origin: text, Tokens: TokenSlice{}}
 				line.LineParse()
 				indexToken := Token{
 					TokenType:   "auto-order-list-item-level-index",
@@ -1092,10 +1092,10 @@ func autoOrderListParse(lines []string, index int, blockResult BlockResult, leve
 				} else {
 					indexToken.Text = strconv.Itoa(len(tokens[0].Children)) + AutoOrderListLevelIndexDivider
 				}
-				tokens[0].Children[len(tokens[0].Children)-1].Children[0].Children = append([]Token{indexToken}, line.Tokens...)
+				tokens[0].Children[len(tokens[0].Children)-1].Children[0].Children = append(TokenSlice{indexToken}, line.Tokens...)
 			} else if temResult.IndentCount >= originIndent+4 { //新的列表项，缩进符合下一级。
 				//var temIndex int
-				var subTokens []Token
+				var subTokens TokenSlice
 				if level != nil {
 					i, subTokens = autoOrderListParse(lines, i, temResult, append(level, strconv.Itoa(len(tokens[0].Children))))
 				} else {
@@ -1112,10 +1112,10 @@ func autoOrderListParse(lines []string, index int, blockResult BlockResult, leve
 				TokenType:   "auto-order-list-item-text-line-wrapper",
 				NodeTagName: "div",
 				NodeClass:   "auto-order-list-item-text-line-wrapper",
-				Children:    []Token{}})
+				Children:    TokenSlice{}})
 			di := len(tokens[0].Children[ci].Children) - 1
 			text := []rune(strings.Replace(lines[i][originIndent:], " ", "&#8194;", temResult.IndentCount))
-			line := Line{Origin: text, Tokens: []Token{}}
+			line := Line{Origin: text, Tokens: TokenSlice{}}
 			line.LineParse()
 			tokens[0].Children[ci].Children[di].Children = line.Tokens
 		} else if !ok { // list结束
@@ -1123,7 +1123,7 @@ func autoOrderListParse(lines []string, index int, blockResult BlockResult, leve
 			return index, tokens
 		} else { // 其他块
 			if temResult.IndentCount >= originIndent+4 {
-				temTokens := make([]Token, 0)
+				temTokens := make(TokenSlice, 0)
 				i, temTokens = blockParse(lines, i, temResult)
 				tokens[0].Children[len(tokens[0].Children)-1].Children = append(tokens[0].Children[len(tokens[0].Children)-1].Children, temTokens...)
 				i--
@@ -1138,14 +1138,14 @@ func autoOrderListParse(lines []string, index int, blockResult BlockResult, leve
 }
 
 // 无序列表转换方法
-func listParse(lines []string, index int, blockResult BlockResult) (int, []Token) {
+func listParse(lines []string, index int, blockResult BlockResult) (int, TokenSlice) {
 	originLevel := blockResult.IndentCount/4 + 1
-	tokens := []Token{
+	tokens := TokenSlice{
 		{
 			TokenType:   "list",
 			NodeTagName: "ul",
 			NodeClass:   "list list-level-" + strconv.Itoa(originLevel),
-			Children:    []Token{},
+			Children:    TokenSlice{},
 		}}
 	originIndent := blockResult.IndentCount
 
@@ -1158,12 +1158,12 @@ func listParse(lines []string, index int, blockResult BlockResult) (int, []Token
 					TokenType:   "list-item",
 					NodeTagName: "li",
 					NodeClass:   "list-item list-item-level-" + strconv.Itoa(originLevel),
-					Children: []Token{
-						{TokenType: "list-item-text-line-wrapper", NodeTagName: "div", NodeClass: "list-item-text-line-wrapper title", Children: []Token{}},
+					Children: TokenSlice{
+						{TokenType: "list-item-text-line-wrapper", NodeTagName: "div", NodeClass: "list-item-text-line-wrapper title", Children: TokenSlice{}},
 					},
 				})
 				text := []rune(lines[i])[2+temResult.IndentCount:]
-				line := Line{Origin: text, Tokens: []Token{}}
+				line := Line{Origin: text, Tokens: TokenSlice{}}
 				line.LineParse()
 				tokens[0].Children[len(tokens[0].Children)-1].Children[0].Children = line.Tokens
 			} else if temResult.IndentCount >= originIndent+4 { //新的列表项，缩进符合下一级。
@@ -1179,10 +1179,10 @@ func listParse(lines []string, index int, blockResult BlockResult) (int, []Token
 				TokenType:   "list-item-text-line-wrapper",
 				NodeTagName: "div",
 				NodeClass:   "list-item-text-line-wrapper",
-				Children:    []Token{}})
+				Children:    TokenSlice{}})
 			di := len(tokens[0].Children[ci].Children) - 1
 			text := []rune(strings.Replace(lines[i][originIndent:], " ", "&#8194;", temResult.IndentCount))
-			line := Line{Origin: text, Tokens: []Token{}}
+			line := Line{Origin: text, Tokens: TokenSlice{}}
 			line.LineParse()
 			tokens[0].Children[ci].Children[di].Children = line.Tokens
 		} else { // list结束
@@ -1195,13 +1195,13 @@ func listParse(lines []string, index int, blockResult BlockResult) (int, []Token
 }
 
 // 文字引用块转换方法
-func blockQuoteParse(lines []string, index int, _ BlockResult) (int, []Token) {
-	tokens := []Token{
+func blockQuoteParse(lines []string, index int, _ BlockResult) (int, TokenSlice) {
+	tokens := TokenSlice{
 		{
 			TokenType:   "block-quote",
 			NodeTagName: "div",
 			NodeClass:   "block-quote",
-			Children:    []Token{},
+			Children:    TokenSlice{},
 		}}
 	//originIndent := blockResult.IndentCount
 
@@ -1215,7 +1215,7 @@ func blockQuoteParse(lines []string, index int, _ BlockResult) (int, []Token) {
 				NodeClass:   "block-quote-line",
 			})
 			if subOk, subResult := isInBlock(lines[i][2:]); subOk {
-				temTokens := make([]Token, 0)
+				temTokens := make(TokenSlice, 0)
 				var subI int
 				var subLines []string
 				l := i
@@ -1232,7 +1232,7 @@ func blockQuoteParse(lines []string, index int, _ BlockResult) (int, []Token) {
 				i--
 			} else {
 				text := []rune(lines[i])[2+temResult.IndentCount:]
-				line := Line{Origin: text, Tokens: []Token{}}
+				line := Line{Origin: text, Tokens: TokenSlice{}}
 				line.LineParse()
 				tokens[0].Children[len(tokens[0].Children)-1].Children = line.Tokens
 			}
@@ -1246,13 +1246,13 @@ func blockQuoteParse(lines []string, index int, _ BlockResult) (int, []Token) {
 }
 
 // 颜色块转换方法
-func styledBlockParse(lines []string, index int, _ BlockResult) (int, []Token) {
-	tokens := []Token{
+func styledBlockParse(lines []string, index int, _ BlockResult) (int, TokenSlice) {
+	tokens := TokenSlice{
 		{
 			TokenType:   "styled-block",
 			NodeTagName: "div",
 			NodeClass:   "styled-block",
-			Children:    []Token{},
+			Children:    TokenSlice{},
 		}}
 	//originIndent := blockResult.IndentCount
 
@@ -1271,7 +1271,7 @@ func styledBlockParse(lines []string, index int, _ BlockResult) (int, []Token) {
 				NodeTagName: "div",
 				NodeClass:   "styled-block-line",
 			})
-			line := Line{Origin: []rune(lines[i]), Tokens: []Token{}}
+			line := Line{Origin: []rune(lines[i]), Tokens: TokenSlice{}}
 			line.LineParse()
 			tokens[0].Children[len(tokens[0].Children)-1].Children = line.Tokens
 		} else { // 其他块
@@ -1280,7 +1280,7 @@ func styledBlockParse(lines []string, index int, _ BlockResult) (int, []Token) {
 				NodeTagName: "div",
 				NodeClass:   "styled-block-line",
 			})
-			temTokens := make([]Token, 0)
+			temTokens := make(TokenSlice, 0)
 			i, temTokens = blockParse(lines, i, temResult)
 			tokens[0].Children[len(tokens[0].Children)-1].Children = append(tokens[0].Children[len(tokens[0].Children)-1].Children, temTokens...)
 			i--
@@ -1291,13 +1291,13 @@ func styledBlockParse(lines []string, index int, _ BlockResult) (int, []Token) {
 }
 
 // 代码块儿转换
-func codeBlockParse(lines []string, index int, _ BlockResult) (int, []Token) {
-	tokens := []Token{
+func codeBlockParse(lines []string, index int, _ BlockResult) (int, TokenSlice) {
+	tokens := TokenSlice{
 		{
 			TokenType:   "code-block",
 			NodeTagName: "pre",
 			NodeClass:   "code-block",
-			Children: []Token{
+			Children: TokenSlice{
 				{
 					TokenType:   "code-block-code",
 					NodeTagName: "code",
@@ -1324,25 +1324,25 @@ func codeBlockParse(lines []string, index int, _ BlockResult) (int, []Token) {
 }
 
 // 表格块转换
-func tableBlockParse(lines []string, index int, _ BlockResult) (int, []Token) {
-	tokens := []Token{
+func tableBlockParse(lines []string, index int, _ BlockResult) (int, TokenSlice) {
+	tokens := TokenSlice{
 		{
 			TokenType:   "table-block",
 			NodeTagName: "table",
 			NodeClass:   "table-block",
-			Children: []Token{
+			Children: TokenSlice{
 				// 表头
 				{
 					TokenType:   "table-block-thead",
 					NodeTagName: "thead",
 					NodeClass:   "table-block-thead",
-					Children: []Token{
+					Children: TokenSlice{
 						// 表头唯一一行
 						{
 							TokenType:   "table-block-thead-tr",
 							NodeTagName: "tr",
 							NodeClass:   "table-block-thead-tr",
-							Children:    []Token{
+							Children:    TokenSlice{
 								// 表头每一单元格
 							},
 						},
@@ -1354,7 +1354,7 @@ func tableBlockParse(lines []string, index int, _ BlockResult) (int, []Token) {
 					TokenType:   "table-block-tbody",
 					NodeTagName: "tbody",
 					NodeClass:   "table-block-tbody",
-					Children:    []Token{},
+					Children:    TokenSlice{},
 				},
 			},
 		}}
@@ -1384,7 +1384,7 @@ func tableBlockParse(lines []string, index int, _ BlockResult) (int, []Token) {
 			}
 		}
 		// 将表格标题单元格的文案继续转换
-		line := Line{Origin: []rune(thToken.Text), Tokens: []Token{}}
+		line := Line{Origin: []rune(thToken.Text), Tokens: TokenSlice{}}
 		line.LineParse()
 		thToken.Children = line.Tokens
 		thToken.Text = ""
@@ -1397,7 +1397,7 @@ func tableBlockParse(lines []string, index int, _ BlockResult) (int, []Token) {
 				TokenType:   "table-block-tbody-tr",
 				NodeTagName: "tr",
 				NodeClass:   "table-block-tbody-tr",
-				Children:    []Token{}})
+				Children:    TokenSlice{}})
 			currTrIndex := len(tokens[0].Children[1].Children) - 1
 			tdRegTemp := re.FindAllStringSubmatch(lines[i], -1)
 			for j := 0; j < len(tdRegTemp)-1; j++ {
@@ -1419,7 +1419,7 @@ func tableBlockParse(lines []string, index int, _ BlockResult) (int, []Token) {
 					})
 				}
 				// 将表格标题单元格的文案继续转换
-				line := Line{Origin: []rune(tdToken.Text), Tokens: []Token{}}
+				line := Line{Origin: []rune(tdToken.Text), Tokens: TokenSlice{}}
 				line.LineParse()
 				tdToken.Children = line.Tokens
 				tdToken.Text = ""
