@@ -1403,7 +1403,7 @@ func tableBlockParse(lines []string, index int, _ BlockResult) (int, TokenSlice)
 				tokens[0].Children[1].Children[currTrIndex].Children = append(tokens[0].Children[1].Children[currTrIndex].Children, tdToken)
 			}
 		} else {
-			index = i + 1
+			index = i
 			return index, tokens
 		}
 	}
