@@ -1336,20 +1336,20 @@ func tableBlockParse(lines []string, index int, _ BlockResult) (int, TokenSlice)
 		}}
 	//var buffer bytes.Buffer
 	i := index
-	re := regexp.MustCompile(`\s*([^|]*)\s*\|`)
-	colRegTemp := re.FindAllStringSubmatch(lines[i], -1)
+	temStr := strings.Split(lines[i], "|")
+	colRegTemp := temStr[1 : len(temStr)-1]
 	i++
 
 	// 表格列的数量
-	colCount := len(colRegTemp) - 1
-	colTextAlign := getTableColTextAlign(colCount, lines[i], re)
+	colCount := len(colRegTemp)
+	colTextAlign := getTableColTextAlign(colCount, lines[i])
 	i++
 	for j := 0; j < colCount; j++ {
 		thToken := Token{
 			TokenType:   "table-block-thead-th",
 			NodeTagName: "th",
 			NodeClass:   "table-block-thead-th",
-			Text:        strings.TrimRight(colRegTemp[j+1][1], " "),
+			Text:        strings.TrimRight(colRegTemp[j], " "),
 		}
 		if colTextAlign[j] != "" {
 			thToken.NodeAttrs = []NodeAttr{
@@ -1375,13 +1375,14 @@ func tableBlockParse(lines []string, index int, _ BlockResult) (int, TokenSlice)
 				NodeClass:   "table-block-tbody-tr",
 				Children:    TokenSlice{}})
 			currTrIndex := len(tokens[0].Children[1].Children) - 1
-			tdRegTemp := re.FindAllStringSubmatch(lines[i], -1)
-			for j := 0; j < len(tdRegTemp)-1; j++ {
+			tdTemStr := strings.Split(lines[i], "|")
+			tdRegTemp := tdTemStr[1 : len(tdTemStr)-1]
+			for j := 0; j < len(tdRegTemp); j++ {
 				tdToken := Token{
 					TokenType:   "table-block-tbody-td",
 					NodeTagName: "td",
 					NodeClass:   "table-block-tbody-td",
-					Text:        strings.TrimRight(tdRegTemp[j+1][1], " "),
+					Text:        strings.TrimRight(tdRegTemp[j], " "),
 				}
 				//if strings.
 				if attrs, str := getSpan(tdToken.Text); attrs != nil {
@@ -1435,16 +1436,18 @@ func getSpan(str string) ([]NodeAttr, string) {
 }
 
 // 根据表格第二行的配置，得到每列的对齐样式。
-func getTableColTextAlign(colCount int, line string, re *regexp.Regexp) []string {
-	colRegTemp := re.FindAllStringSubmatch(line, -1)
+func getTableColTextAlign(colCount int, line string) []string {
+
+	temStr := strings.Split(line, "|")
+	colRegTemp := temStr[1 : len(temStr)-1]
 	colTextAlign := make([]string, colCount)
 	for i := 0; i < colCount; i++ {
 
 		// 左对齐
-		if strings.Contains(colRegTemp[i+1][1], "-:") {
+		if strings.Contains(colRegTemp[i], "-:") {
 
 			// 居中
-			if strings.Contains(colRegTemp[i+1][1], ":-") {
+			if strings.Contains(colRegTemp[i], ":-") {
 				colTextAlign[i] = "text-align:center;"
 				continue
 			} else {
@@ -1455,7 +1458,7 @@ func getTableColTextAlign(colCount int, line string, re *regexp.Regexp) []string
 		}
 
 		// 右对齐
-		if strings.Contains(colRegTemp[i+1][1], ":-") {
+		if strings.Contains(colRegTemp[i], ":-") {
 			colTextAlign[i] = "text-align:right;"
 			continue
 		}
