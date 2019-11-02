@@ -24,7 +24,7 @@ func main() {
 			log.Printf("accept error: %v", err)
 		}
 
-		// 开一个协程去执行，否则会祖册下一个调用rpc的人
+		// 开一个协程去执行，否则会阻塞下一个调用rpc的人
 		go jsonrpc.ServeConn(conn)
 	}
 }

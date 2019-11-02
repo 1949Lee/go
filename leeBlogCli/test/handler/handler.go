@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"io/ioutil"
 	"leeBlogCli/test/parser"
-	"net/http"
+    "log"
+    "net"
+    "net/http"
 	"time"
 )
 
@@ -60,4 +62,12 @@ func ReadMarkdownText(writer http.ResponseWriter, r *http.Request) {
 	}
 	writer.Write([]byte(b))
 	fmt.Println("app elapsed:", time.Since(t))
+}
+
+
+func SocketReadMarkdownText(conn net.Conn) {
+    _, err := conn.Write([]byte("hello"))
+    if err!=nil {
+        log.Printf( "tcp write error:%v",err)
+    }
 }

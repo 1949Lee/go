@@ -3,7 +3,9 @@ package main
 import (
 	"fmt"
 	"leeBlogCli/test/handler"
-	"net/http"
+    "log"
+    "net"
+    "net/http"
 	_ "net/http/pprof"
 )
 
@@ -15,4 +17,19 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+    listener, err := net.Listen("tcp", ":1315")
+    if err!=nil{
+        panic(err)
+    }
+    for {
+        conn, err := listener.Accept()
+        if err!=nil{
+            log.Printf("accept error:%v",err)
+            continue
+        }
+
+        go func(conn net.Conn) {
+            handler.SocketReadMarkdownText(conn)
+        }(conn)
+    }
 }
