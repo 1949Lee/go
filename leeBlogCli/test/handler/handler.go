@@ -32,6 +32,11 @@ var upgrader = websocket.Upgrader{
 }
 
 func ReadMarkdownText(writer http.ResponseWriter, r *http.Request) {
+	defer func() {
+		if err := recover(); err != nil {
+			log.Println(err)
+		}
+	}()
 
 	/**
 	  此部分代码可以提取出来。*/
@@ -75,16 +80,19 @@ func ReadMarkdownText(writer http.ResponseWriter, r *http.Request) {
 	fmt.Println("app elapsed:", time.Since(t))
 }
 
-func SocketReadMarkdownText(writer http.ResponseWriter, r *http.Request) {
-	//header := http.Header{}
-	//header.Add("Access-Control-Allow-Origin", "http://localhost:3000")
-	conn, err := upgrader.Upgrade(writer, r, nil)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	defer conn.Close()
+func markdownLoop(conn *websocket.Conn) {
+	defer func() {
+		if err := recover(); err != nil {
+			log.Println(err)
+			if err = conn.WriteJSON(conn.WriteJSON(ResponseResult{Code: 1})); err != nil {
+				log.Printf("write err:%v", err)
+				return
+			}
+		}
+		markdownLoop(conn)
+	}()
 	for {
+		t := time.Now()
 		var param ParamNewArticle
 		result := ResponseResult{}
 		err := conn.ReadJSON(&param)
@@ -113,9 +121,22 @@ func SocketReadMarkdownText(writer http.ResponseWriter, r *http.Request) {
 			MarkDownHtml: html,
 		}
 		if err = conn.WriteJSON(result); err != nil {
-			log.Printf("receive err:%v", err)
+			log.Printf("write err:%v", err)
 			break
 		}
-	}
 
+		log.Println("app elapsed:", time.Since(t))
+	}
+}
+
+func SocketReadMarkdownText(writer http.ResponseWriter, r *http.Request) {
+	//header := http.Header{}
+	//header.Add("Access-Control-Allow-Origin", "http://localhost:3000")
+	conn, err := upgrader.Upgrade(writer, r, nil)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	defer conn.Close()
+	markdownLoop(conn)
 }
