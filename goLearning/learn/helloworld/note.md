@@ -172,6 +172,10 @@ http.Client可以构造一个客户端，然后通过client.Do(req)的方式来�
 ### html/template 模板引擎
 查看相关资料：语法+测试
 
+### websocket框架源码阅读
+github.com/gorilla/websocket：
+1. ReadMessage是如何判断收到消息的类型，如何返回的三个参数。
+
 
 
 ### 爬虫实战部分中可以记录的内容。
