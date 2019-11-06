@@ -1,23 +1,29 @@
 package handler
 
 import (
+	"bufio"
+	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	"github.com/gorilla/websocket"
 	"io/ioutil"
+	"leeBlogCli/test/fileServer"
 	"leeBlogCli/test/parser"
 	"log"
 	"net/http"
+	"os"
 	"time"
 )
 
 type ParamNewArticle struct {
 	Text string
+	File fileServer.File
 }
 
 type ResponseResult struct {
-	Code int         `json:"code"`
-	Data interface{} `json:"data"`
+	Code     int         `json:"code"`
+	Data     interface{} `json:"data"`
+	Markdown interface{} `json:"markdown"`
 }
 
 var upgrader = websocket.Upgrader{
@@ -80,7 +86,7 @@ func ReadMarkdownText(writer http.ResponseWriter, r *http.Request) {
 	fmt.Println("app elapsed:", time.Since(t))
 }
 
-func markdownLoop(conn *websocket.Conn) {
+func websocketLoop(conn *websocket.Conn) {
 	defer func() {
 		if err := recover(); err != nil {
 			log.Println(err)
@@ -89,18 +95,11 @@ func markdownLoop(conn *websocket.Conn) {
 				return
 			}
 		}
-		markdownLoop(conn)
+		websocketLoop(conn)
 	}()
 	for {
-		t := time.Now()
-		var param ParamNewArticle
-		result := ResponseResult{}
-		err := conn.ReadJSON(&param)
-
+		messageType, p, err := conn.ReadMessage()
 		if err != nil {
-			//if err = {
-			//    break
-			//}
 			_, ok := err.(*websocket.CloseError)
 			if ok {
 				break
@@ -108,25 +107,72 @@ func markdownLoop(conn *websocket.Conn) {
 			log.Printf("receive err:%v", err)
 			continue
 		}
-		result.Code = 0
+		if messageType == websocket.TextMessage {
+			go func() {
+				var obj ParamNewArticle
 
-		dataList, html := parser.MarkdownParse(param.Text)
-		result.Data = struct {
-			Text         string              `json:"text"`
-			List         []parser.TokenSlice `json:"list"`
-			MarkDownHtml string              `json:"html"`
-		}{
-			Text:         "success",
-			List:         dataList,
-			MarkDownHtml: html,
-		}
-		if err = conn.WriteJSON(result); err != nil {
-			log.Printf("write err:%v", err)
-			break
-		}
+				if err := json.Unmarshal(p, &obj); err != nil {
+					log.Println(err)
+					errResult := ResponseResult{
+						Code: 1,
+						Data: "无法识别的参数",
+					}
+					if err := conn.WriteJSON(errResult); err != nil {
+						log.Printf("write err:%v", err)
+					}
+				}
+				if obj.Text != "" { // 有text表示就是要转换markdown
+					result := markdownParse(obj.Text)
+					if err := conn.WriteJSON(result); err != nil {
+						log.Printf("write err:%v", err)
+					}
+				}
+				if obj.File != (fileServer.File{}) {
+					log.Printf("%v", obj.File)
+					result := ResponseResult{Code: 0, Data: "收到了文件信息"}
+					if err := conn.WriteJSON(result); err != nil {
+						log.Printf("write err:%v", err)
+					}
+				}
+			}()
+		} else if messageType == websocket.BinaryMessage {
+			//log.Println(p)
+			log.Printf("%d", binary.BigEndian.Uint16(p[0:2]))
+			log.Printf("%d", binary.BigEndian.Uint16(p[2:4]))
+			f, err := os.Create("./test.jpg")
+			if err != nil {
+				fmt.Println(err)
+				return
+			}
+			defer f.Close()
 
-		log.Println("app elapsed:", time.Since(t))
+			bw := bufio.NewWriter(f)
+			_, ok := bw.Write(p[4:])
+			if ok != nil {
+				log.Println(ok)
+			}
+			yes := bw.Flush()
+			if yes != nil {
+				log.Println(yes)
+			}
+		}
 	}
+}
+
+func markdownParse(p string) ResponseResult {
+	result := ResponseResult{}
+	result.Code = 0
+	dataList, html := parser.MarkdownParse(p)
+	result.Markdown = struct {
+		Text         string              `json:"text"`
+		List         []parser.TokenSlice `json:"list"`
+		MarkDownHtml string              `json:"html"`
+	}{
+		Text:         "success",
+		List:         dataList,
+		MarkDownHtml: html,
+	}
+	return result
 }
 
 func SocketReadMarkdownText(writer http.ResponseWriter, r *http.Request) {
@@ -138,5 +184,5 @@ func SocketReadMarkdownText(writer http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer conn.Close()
-	markdownLoop(conn)
+	websocketLoop(conn)
 }
