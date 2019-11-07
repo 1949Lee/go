@@ -109,6 +109,16 @@ func websocketLoop(conn *websocket.Conn) {
 		}
 		if messageType == websocket.TextMessage {
 			go func() {
+				defer func() {
+					if err := recover(); err != nil {
+						log.Println(err)
+						if err = conn.WriteJSON(conn.WriteJSON(ResponseResult{Code: 1})); err != nil {
+							log.Printf("write err:%v", err)
+							return
+						}
+					}
+					websocketLoop(conn)
+				}()
 				var obj ParamNewArticle
 
 				if err := json.Unmarshal(p, &obj); err != nil {
