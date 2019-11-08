@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/gorilla/websocket"
 	"io/ioutil"
+	"leeBlogCli/test/concurrent"
 	"leeBlogCli/test/fileServer"
 	"leeBlogCli/test/parser"
 	"log"
@@ -20,13 +21,7 @@ type ParamNewArticle struct {
 	File fileServer.File
 }
 
-type ResponseResult struct {
-	Code     int         `json:"code"`
-	Data     interface{} `json:"data"`
-	Markdown interface{} `json:"markdown"`
-}
-
-var upgrader = websocket.Upgrader{
+var upgrade = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
 	CheckOrigin: func(r *http.Request) bool {
@@ -59,7 +54,7 @@ func ReadMarkdownText(writer http.ResponseWriter, r *http.Request) {
 	//下面是接口真正的处理
 	writer.Header().Add("Access-Control-Allow-Credentials", "true")
 	var param ParamNewArticle
-	result := ResponseResult{}
+	result := concurrent.ResponseResult{}
 	body, _ := ioutil.ReadAll(r.Body)
 	defer r.Body.Close()
 	err := json.Unmarshal(body, &param)
@@ -86,17 +81,18 @@ func ReadMarkdownText(writer http.ResponseWriter, r *http.Request) {
 	fmt.Println("app elapsed:", time.Since(t))
 }
 
-func websocketLoop(conn *websocket.Conn) {
+func websocketLoop(conn *websocket.Conn, writer *concurrent.Writer) {
 	defer func() {
 		if err := recover(); err != nil {
-			log.Println(err)
-			if err = conn.WriteJSON(conn.WriteJSON(ResponseResult{Code: 1})); err != nil {
-				log.Printf("write err:%v", err)
-				return
-			}
+			log.Printf("websocketLoop error %s", err)
+			//if err = conn.WriteJSON(conn.WriteJSON(ResponseResult{Code: 1})); err != nil {
+			//	log.Printf("write err:%v", err)
+			//	//return
+			//}
+			websocketLoop(conn, writer)
 		}
-		websocketLoop(conn)
 	}()
+	writer.Run()
 	for {
 		messageType, p, err := conn.ReadMessage()
 		if err != nil {
@@ -109,44 +105,27 @@ func websocketLoop(conn *websocket.Conn) {
 		}
 		if messageType == websocket.TextMessage {
 			go func() {
-				defer func() {
-					if err := recover(); err != nil {
-						log.Println(err)
-						if err = conn.WriteJSON(conn.WriteJSON(ResponseResult{Code: 1})); err != nil {
-							log.Printf("write err:%v", err)
-							return
-						}
-					}
-					websocketLoop(conn)
-				}()
 				var obj ParamNewArticle
 
 				if err := json.Unmarshal(p, &obj); err != nil {
 					log.Println(err)
-					errResult := ResponseResult{
+					errResult := concurrent.ResponseResult{
 						Code: 1,
 						Data: "无法识别的参数",
 					}
-					if err := conn.WriteJSON(errResult); err != nil {
-						log.Printf("write err:%v", err)
-					}
+					writer.ResultChan <- &errResult
 				}
 				if obj.Text != "" { // 有text表示就是要转换markdown
 					result := markdownParse(obj.Text)
-					if err := conn.WriteJSON(result); err != nil {
-						log.Printf("write err:%v", err)
-					}
+					writer.ResultChan <- &result
 				}
 				if obj.File != (fileServer.File{}) {
 					log.Printf("%v", obj.File)
-					result := ResponseResult{Code: 0, Data: "收到了文件信息"}
-					if err := conn.WriteJSON(result); err != nil {
-						log.Printf("write err:%v", err)
-					}
+					result := concurrent.ResponseResult{Code: 0, Data: "收到了文件信息"}
+					writer.ResultChan <- &result
 				}
 			}()
 		} else if messageType == websocket.BinaryMessage {
-			//log.Println(p)
 			log.Printf("%d", binary.BigEndian.Uint16(p[0:2]))
 			log.Printf("%d", binary.BigEndian.Uint16(p[2:4]))
 			f, err := os.Create("./test.jpg")
@@ -169,8 +148,8 @@ func websocketLoop(conn *websocket.Conn) {
 	}
 }
 
-func markdownParse(p string) ResponseResult {
-	result := ResponseResult{}
+func markdownParse(p string) concurrent.ResponseResult {
+	result := concurrent.ResponseResult{}
 	result.Code = 0
 	dataList, html := parser.MarkdownParse(p)
 	result.Markdown = struct {
@@ -188,11 +167,15 @@ func markdownParse(p string) ResponseResult {
 func SocketReadMarkdownText(writer http.ResponseWriter, r *http.Request) {
 	//header := http.Header{}
 	//header.Add("Access-Control-Allow-Origin", "http://localhost:3000")
-	conn, err := upgrader.Upgrade(writer, r, nil)
+	conn, err := upgrade.Upgrade(writer, r, nil)
 	if err != nil {
 		log.Println(err)
 		return
 	}
 	defer conn.Close()
-	websocketLoop(conn)
+	socketWriter := concurrent.Writer{
+		Conn:       conn,
+		ResultChan: make(chan *concurrent.ResponseResult),
+	}
+	websocketLoop(conn, &socketWriter)
 }
