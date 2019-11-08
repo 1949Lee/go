@@ -1002,7 +1002,7 @@ func MarkdownParse(markdownText string) ([]TokenSlice, string) {
 			dataList = append(dataList, line.Tokens)
 		}
 	}
-	return []TokenSlice{}, LinesToHtml(dataList)
+	return dataList, LinesToHtml(dataList)
 }
 
 // 将多行转换为块。
