@@ -10,7 +10,7 @@ import (
 
 func main() {
 	http.HandleFunc("/once", handler.ReadMarkdownText)
-	http.HandleFunc(config.WebsocketParserPath, handler.SocketReadMarkdownText)
+	http.HandleFunc(config.WebsocketParserPath, handler.WebSocketReadMarkdownText)
 	fmt.Printf("server start with http://localhost:%s\n", config.ServerPort)
 	err := http.ListenAndServe(":"+config.ServerPort, nil)
 	if err != nil {
