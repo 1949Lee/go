@@ -2,17 +2,17 @@ package main
 
 import (
 	"fmt"
+	"leeBlogCli/test/config"
 	"leeBlogCli/test/handler"
 	"net/http"
 	_ "net/http/pprof"
 )
 
 func main() {
-	port := "1314"
 	http.HandleFunc("/once", handler.ReadMarkdownText)
-	http.HandleFunc("/ws", handler.SocketReadMarkdownText)
-	fmt.Printf("server start with http://localhost:%s\n", port)
-	err := http.ListenAndServe(":"+port, nil)
+	http.HandleFunc(config.WebsocketParserPath, handler.SocketReadMarkdownText)
+	fmt.Printf("server start with http://localhost:%s\n", config.ServerPort)
+	err := http.ListenAndServe(":"+config.ServerPort, nil)
 	if err != nil {
 		panic(err)
 	}

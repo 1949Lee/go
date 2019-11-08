@@ -1,13 +1,9 @@
 package main
 
-import (
-	"fmt"
-	"regexp"
-)
+import "fmt"
 
 func main() {
-	a := "左对 齐 dsad :+1+:"
-	re := regexp.MustCompile(`:-(\d+)-:|:\+(\d)+\+:`)
-	arr := re.FindAllStringSubmatch(a, -1)
-	fmt.Println(arr)
+	var resultQueue []int
+	resultQueue = append(resultQueue, 1)
+	fmt.Println(resultQueue)
 }

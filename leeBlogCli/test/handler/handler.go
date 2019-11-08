@@ -104,12 +104,14 @@ func websocketLoop(conn *websocket.Conn, writer *concurrent.Writer) {
 			continue
 		}
 		if messageType == websocket.TextMessage {
-			go func() {
+			t := time.Now().Nanosecond()
+			go func(t *int) {
 				var obj ParamNewArticle
 
 				if err := json.Unmarshal(p, &obj); err != nil {
 					log.Println(err)
 					errResult := concurrent.ResponseResult{
+						Time: t,
 						Code: 1,
 						Data: "无法识别的参数",
 					}
@@ -117,14 +119,15 @@ func websocketLoop(conn *websocket.Conn, writer *concurrent.Writer) {
 				}
 				if obj.Text != "" { // 有text表示就是要转换markdown
 					result := markdownParse(obj.Text)
+					result.Time = t
 					writer.ResultChan <- &result
 				}
 				if obj.File != (fileServer.File{}) {
 					log.Printf("%v", obj.File)
-					result := concurrent.ResponseResult{Code: 0, Data: "收到了文件信息"}
+					result := concurrent.ResponseResult{Time: t, Code: 0, Data: "收到了文件信息"}
 					writer.ResultChan <- &result
 				}
-			}()
+			}(&t)
 		} else if messageType == websocket.BinaryMessage {
 			log.Printf("%d", binary.BigEndian.Uint16(p[0:2]))
 			log.Printf("%d", binary.BigEndian.Uint16(p[2:4]))
