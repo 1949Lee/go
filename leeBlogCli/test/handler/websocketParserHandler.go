@@ -19,7 +19,7 @@ var upgrade = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
 	CheckOrigin: func(r *http.Request) bool {
-		if r.Header.Get("Origin") == "http://localhost:3000" {
+		if r.Header.Get("Origin") == "http://localhost:8080" {
 			return true
 		}
 		return false
@@ -51,7 +51,14 @@ func websocketLoop(conn *websocket.Conn, writer *concurrent.Writer) {
 		if messageType == websocket.TextMessage {
 			t := time.Now().Nanosecond()
 			go func(t *int) {
-				var obj ParamNewArticle
+				defer func() {
+					if err := recover(); err != nil {
+						log.Printf("text parse error %s", err)
+					}
+				}()
+				var obj = ParamNewArticle{
+					Type: 1,
+				}
 
 				if err := json.Unmarshal(p, &obj); err != nil {
 					log.Println(err)
@@ -62,15 +69,17 @@ func websocketLoop(conn *websocket.Conn, writer *concurrent.Writer) {
 					}
 					writer.ResultChan <- &errResult
 				}
-				if obj.Text != "" { // 有text表示就是要转换markdown
+				switch obj.Type {
+				case 1:
 					result := markdownParse(obj.Text)
 					result.Time = t
 					writer.ResultChan <- &result
-				}
-				if obj.File != (fileServer.File{}) {
-					log.Printf("%v", obj.File)
-					result := concurrent.ResponseResult{Time: t, Code: 0, Data: "收到了文件信息"}
-					writer.ResultChan <- &result
+				case 2:
+					if obj.File != (fileServer.File{}) {
+						log.Printf("%v", obj.File)
+						result := concurrent.ResponseResult{Time: t, Code: 0, Data: "收到了文件信息"}
+						writer.ResultChan <- &result
+					}
 				}
 			}(&t)
 		} else if messageType == websocket.BinaryMessage {
