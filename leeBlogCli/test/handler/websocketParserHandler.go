@@ -5,9 +5,9 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
+	uuid2 "github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	"leeBlogCli/test/concurrent"
-	"leeBlogCli/test/fileServer"
 	"leeBlogCli/test/parser"
 	"log"
 	"net/http"
@@ -50,14 +50,16 @@ func websocketLoop(conn *websocket.Conn, writer *concurrent.Writer) {
 		}
 		if messageType == websocket.TextMessage {
 			t := time.Now().Nanosecond()
-			go func(t *int) {
+			uuid := uuid2.New()
+			go func(t *int, uuid uuid2.UUID) {
 				defer func() {
 					if err := recover(); err != nil {
 						log.Printf("text parse error %s", err)
 					}
 				}()
 				var obj = ParamNewArticle{
-					Type: 1,
+					Type:  1,
+					Files: nil,
 				}
 
 				if err := json.Unmarshal(p, &obj); err != nil {
@@ -73,15 +75,19 @@ func websocketLoop(conn *websocket.Conn, writer *concurrent.Writer) {
 				case 1:
 					result := markdownParse(obj.Text)
 					result.Time = t
+					result.Type = 1
 					writer.ResultChan <- &result
 				case 2:
-					if obj.File != (fileServer.File{}) {
-						log.Printf("%v", obj.File)
-						result := concurrent.ResponseResult{Time: t, Code: 0, Data: "收到了文件信息"}
+					if obj.Files != nil {
+						log.Printf("%v", obj.Files)
+						for i := range obj.Files {
+							obj.Files[i].ID = uuid2.New().ID()
+						}
+						result := concurrent.ResponseResult{Type: 2, Time: t, Code: 0, Files: obj.Files}
 						writer.ResultChan <- &result
 					}
 				}
-			}(&t)
+			}(&t, uuid)
 		} else if messageType == websocket.BinaryMessage {
 			log.Printf("%d", binary.BigEndian.Uint16(p[0:2]))
 			log.Printf("%d", binary.BigEndian.Uint16(p[2:4]))

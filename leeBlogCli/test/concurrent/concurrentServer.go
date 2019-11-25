@@ -8,9 +8,11 @@ import (
 )
 
 type ResponseResult struct {
+	Type     uint8       `json:"type"`
 	Time     *int        `json:"-" `
 	Code     int         `json:"code"`
 	Data     interface{} `json:"data"`
+	Files    interface{} `json:"files"`
 	Markdown interface{} `json:"markdown"`
 }
 

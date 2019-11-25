@@ -1,9 +1,11 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	uuid2 "github.com/google/uuid"
+)
 
 func main() {
-	var resultQueue []int
-	resultQueue = append(resultQueue, 1)
-	fmt.Println(resultQueue)
+	uuid := uuid2.New()
+	fmt.Println(uuid.ID())
 }
