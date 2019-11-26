@@ -2,10 +2,17 @@ package fileServer
 
 // 文件信息格式
 type File struct {
-	ID           uint32 `json:"id"`
-	Name         string `json:"name"`
-	Size         int    `json:"size"`
-	LastModified int    `json:"lastModified"`
+	// 文件id 由第三方库生成
+	ID uint32 `json:"id"`
+
+	// 文件名字
+	Name string `json:"name"`
+
+	// 文件大小，单位字节。
+	Size int `json:"size"`
+
+	// 文件最后修改时间，单位毫秒。
+	LastModified int `json:"lastModified"`
 }
 
 // 接收到的文件的列表

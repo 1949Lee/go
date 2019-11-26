@@ -58,7 +58,13 @@ func (w *Writer) Run() {
 			}
 		}(ticker)
 		for result := range w.ResultChan {
-			resultQueue = append(resultQueue, result)
+			if result.Type != 1 {
+				if err := w.Conn.WriteJSON(result); err != nil {
+					log.Printf("write err:%v", err)
+				}
+			} else {
+				resultQueue = append(resultQueue, result)
+			}
 		}
 	}()
 }
