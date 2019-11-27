@@ -1,17 +1,15 @@
 package handler
 
 import (
-	"bufio"
 	"encoding/binary"
 	"encoding/json"
-	"fmt"
 	uuid2 "github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	"leeBlogCli/test/concurrent"
+	"leeBlogCli/test/fileServer"
 	"leeBlogCli/test/parser"
 	"log"
 	"net/http"
-	"os"
 	"time"
 )
 
@@ -82,6 +80,11 @@ func websocketLoop(conn *websocket.Conn, writer *concurrent.Writer) {
 						log.Printf("%v", obj.Files)
 						for i := range obj.Files {
 							obj.Files[i].ID = uuid2.New().ID()
+							writer.FileServer.FileMap[obj.Files[i].ID] = &fileServer.FileInfo{
+								ID:      obj.Files[i].ID,
+								Name:    obj.Files[i].Name,
+								ExtType: obj.Files[i].ExtType,
+							}
 						}
 						result := concurrent.ResponseResult{Type: 2, Time: t, Code: 0, Files: obj.Files}
 						writer.ResultChan <- &result
@@ -91,22 +94,27 @@ func websocketLoop(conn *websocket.Conn, writer *concurrent.Writer) {
 		} else if messageType == websocket.BinaryMessage {
 			log.Printf("%d", binary.BigEndian.Uint16(p[0:2]))
 			log.Printf("%d", binary.BigEndian.Uint16(p[2:4]))
-			f, err := os.Create("./test.jpg")
-			if err != nil {
-				fmt.Println(err)
-				return
+			fragment := fileServer.FileFragment{
+				FileID:        binary.BigEndian.Uint32(p[0:4]),
+				FragmentIndex: binary.BigEndian.Uint16(p[4:6]),
 			}
-			defer f.Close()
-
-			bw := bufio.NewWriter(f)
-			_, ok := bw.Write(p[4:])
-			if ok != nil {
-				log.Println(ok)
-			}
-			yes := bw.Flush()
-			if yes != nil {
-				log.Println(yes)
-			}
+			writer.FileServer.FileFragmentChan <- &fragment
+			//f, err := os.Create("./test.jpg")
+			//if err != nil {
+			//    log.Printf("create file fail, the err:%v",err)
+			//	return
+			//}
+			//defer f.Close()
+			//
+			//bw := bufio.NewWriter(f)
+			//_, ok := bw.Write(p[4:])
+			//if ok != nil {
+			//	log.Println(ok)
+			//}
+			//yes := bw.Flush()
+			//if yes != nil {
+			//	log.Println(yes)
+			//}
 		}
 	}
 }
@@ -139,6 +147,10 @@ func WebSocketReadMarkdownText(writer http.ResponseWriter, r *http.Request) {
 	socketWriter := concurrent.Writer{
 		Conn:       conn,
 		ResultChan: make(chan *concurrent.ResponseResult),
+		FileServer: fileServer.FileServer{
+			FileMap:          make(map[uint32]fileServer.FileInfo, 0),
+			FileFragmentChan: make(chan *fileServer.FileFragment),
+		},
 	}
 	websocketLoop(conn, &socketWriter)
 }

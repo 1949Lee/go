@@ -1,11 +1,23 @@
 package main
 
-import (
-	"fmt"
-	uuid2 "github.com/google/uuid"
-)
+import "fmt"
 
 func main() {
-	uuid := uuid2.New()
-	fmt.Println(uuid.ID())
+	//uuid := uuid2.New()
+	//fmt.Println(uuid.ID())
+
+	a := struct {
+		name string
+	}{
+		name: "a",
+	}
+
+	var b *struct {
+		name string
+	}
+	b = &a
+
+	b.name = "b"
+
+	fmt.Println(a)
 }

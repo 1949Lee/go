@@ -3,6 +3,7 @@ package concurrent
 import (
 	"github.com/gorilla/websocket"
 	"leeBlogCli/test/config"
+	"leeBlogCli/test/fileServer"
 	"log"
 	"time"
 )
@@ -37,9 +38,13 @@ func (q *ResponseResultQueue) Max() *ResponseResult {
 type Writer struct {
 	Conn       *websocket.Conn
 	ResultChan chan *ResponseResult
+	FileServer fileServer.FileServer
 }
 
 func (w *Writer) Run() {
+
+	// 运行文件服务器
+	w.FileServer.Run(w.Conn)
 
 	go func() {
 		var resultQueue ResponseResultQueue
