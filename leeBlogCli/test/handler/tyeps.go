@@ -1,11 +1,11 @@
 package handler
 
 import (
-	"leeBlogCli/test/fileServer"
+	"leeBlogCli/test/concurrent"
 )
 
 type ParamNewArticle struct {
 	Type  uint8
 	Text  string
-	Files []fileServer.File
+	Files []concurrent.File
 }

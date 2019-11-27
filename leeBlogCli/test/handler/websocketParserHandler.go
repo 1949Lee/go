@@ -6,7 +6,6 @@ import (
 	uuid2 "github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	"leeBlogCli/test/concurrent"
-	"leeBlogCli/test/fileServer"
 	"leeBlogCli/test/parser"
 	"log"
 	"net/http"
@@ -80,10 +79,12 @@ func websocketLoop(conn *websocket.Conn, writer *concurrent.Writer) {
 						log.Printf("%v", obj.Files)
 						for i := range obj.Files {
 							obj.Files[i].ID = uuid2.New().ID()
-							writer.FileServer.FileMap[obj.Files[i].ID] = &fileServer.FileInfo{
-								ID:      obj.Files[i].ID,
-								Name:    obj.Files[i].Name,
-								ExtType: obj.Files[i].ExtType,
+							writer.FileServer.FileMap[obj.Files[i].ID] = &concurrent.FileInfo{
+								ID:          obj.Files[i].ID,
+								Name:        obj.Files[i].Name,
+								ExtType:     obj.Files[i].ExtType,
+								ServerFile:  nil,
+								BufIOWriter: nil,
 							}
 						}
 						result := concurrent.ResponseResult{Type: 2, Time: t, Code: 0, Files: obj.Files}
@@ -94,7 +95,7 @@ func websocketLoop(conn *websocket.Conn, writer *concurrent.Writer) {
 		} else if messageType == websocket.BinaryMessage {
 			log.Printf("%d", binary.BigEndian.Uint16(p[0:2]))
 			log.Printf("%d", binary.BigEndian.Uint16(p[2:4]))
-			fragment := fileServer.FileFragment{
+			fragment := concurrent.FileFragment{
 				FileID:        binary.BigEndian.Uint32(p[0:4]),
 				FragmentIndex: binary.BigEndian.Uint16(p[4:6]),
 			}
@@ -147,9 +148,9 @@ func WebSocketReadMarkdownText(writer http.ResponseWriter, r *http.Request) {
 	socketWriter := concurrent.Writer{
 		Conn:       conn,
 		ResultChan: make(chan *concurrent.ResponseResult),
-		FileServer: fileServer.FileServer{
-			FileMap:          make(map[uint32]fileServer.FileInfo, 0),
-			FileFragmentChan: make(chan *fileServer.FileFragment),
+		FileServer: concurrent.FileServer{
+			FileMap:          make(map[uint32]*concurrent.FileInfo, 0),
+			FileFragmentChan: make(chan *concurrent.FileFragment),
 		},
 	}
 	websocketLoop(conn, &socketWriter)

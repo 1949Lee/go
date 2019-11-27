@@ -3,18 +3,22 @@ package concurrent
 import (
 	"github.com/gorilla/websocket"
 	"leeBlogCli/test/config"
-	"leeBlogCli/test/fileServer"
 	"log"
 	"time"
 )
 
+type ResponseCodeType int
+
 type ResponseResult struct {
-	Type     uint8       `json:"type"`
-	Time     *int        `json:"-" `
-	Code     int         `json:"code"`
-	Data     interface{} `json:"data"`
-	Files    interface{} `json:"files"`
-	Markdown interface{} `json:"markdown"`
+	// 1表示markdown相关，2 表示文件准备相关，3表示文件上传相关。
+	Type uint8 `json:"type"`
+	Time *int  `json:"-" `
+
+	// code码开头第一位表示type类型的值。如文件上传相关则为形如：3XX
+	Code     ResponseCodeType `json:"code"`
+	Data     interface{}      `json:"data"`
+	Files    interface{}      `json:"files"`
+	Markdown interface{}      `json:"markdown"`
 }
 
 type ResponseResultQueue []*ResponseResult
@@ -38,7 +42,7 @@ func (q *ResponseResultQueue) Max() *ResponseResult {
 type Writer struct {
 	Conn       *websocket.Conn
 	ResultChan chan *ResponseResult
-	FileServer fileServer.FileServer
+	FileServer FileServer
 }
 
 func (w *Writer) Run() {
