@@ -132,19 +132,22 @@ func (s *FileServer) Run(w *websocket.Conn) {
 					fileInfo.ServerFile = f
 					fileInfo.BufIOWriter = bufio.NewWriter(f)
 				} else {
+
+					_, ok := fileInfo.BufIOWriter.Write(fragment.FragmentData)
+					if ok != nil {
+						log.Printf("Write file fagment error, fileID:%d fileName:%s fragmentIndex:%d error is: %v \n", fileInfo.ID, fileInfo.Name, fragment.FragmentIndex, ok)
+					}
+					yes := fileInfo.BufIOWriter.Flush()
+					if yes != nil {
+						log.Println(yes)
+					}
 					// 表示文件数据到了最后。
 					if fragment.FileFragmentEnd {
-						//infos, e := fileInfo.ServerFile.Stat()
-						//fileInfo.ServerFile.Close()
-					} else { // 表示文件数据没有收到最后一个。
-						_, ok := fileInfo.BufIOWriter.Write(fragment.FragmentData)
-						if ok != nil {
-							log.Printf("Write file fagment error, fileID:%d fileName:%s fragmentIndex:%d error is: %v \n", fileInfo.ID, fileInfo.Name, fragment.FragmentIndex, ok)
+						err := os.Rename("./"+string(fileInfo.ID)+".lee", "./"+string(fileInfo.ID)+fileInfo.ExtType)
+						if err != nil {
+							log.Printf("Rename file(%s) error, error is: %v \n", string(fileInfo.ID)+".lee", err)
 						}
-						yes := fileInfo.BufIOWriter.Flush()
-						if yes != nil {
-							log.Println(yes)
-						}
+						fileInfo.ServerFile.Close()
 					}
 				}
 			}(info)
