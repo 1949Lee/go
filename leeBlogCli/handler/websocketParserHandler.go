@@ -9,6 +9,7 @@ import (
 	"leeBlogCli/parser"
 	"log"
 	"net/http"
+	"strconv"
 	"time"
 )
 
@@ -76,7 +77,7 @@ func websocketLoop(conn *websocket.Conn, writer *concurrent.Writer) {
 					writer.ResultChan <- &result
 				case 2:
 					if obj.Files != nil {
-						log.Printf("%v", obj.Files)
+						//log.Printf("%v", obj.Files)
 						for i := range obj.Files {
 							obj.Files[i].ID = uuid2.New().ID()
 							writer.FileServer.FileMap[obj.Files[i].ID] = &concurrent.FileInfo{
@@ -85,6 +86,7 @@ func websocketLoop(conn *websocket.Conn, writer *concurrent.Writer) {
 								ExtType:     obj.Files[i].ExtType,
 								ServerFile:  nil,
 								BufIOWriter: nil,
+								ServerName:  strconv.FormatUint(uint64(obj.Files[i].ID), 10),
 							}
 						}
 						result := concurrent.ResponseResult{Type: 2, Time: t, Code: 0, Files: obj.Files}
@@ -93,8 +95,6 @@ func websocketLoop(conn *websocket.Conn, writer *concurrent.Writer) {
 				}
 			}(&t, uuid)
 		} else if messageType == websocket.BinaryMessage {
-			log.Printf("%d", binary.BigEndian.Uint16(p[0:2]))
-			log.Printf("%d", binary.BigEndian.Uint16(p[2:4]))
 			fragment := concurrent.FileFragment{
 				FileID:          binary.BigEndian.Uint32(p[0:4]),
 				FragmentIndex:   binary.BigEndian.Uint16(p[4:6]),
@@ -102,22 +102,6 @@ func websocketLoop(conn *websocket.Conn, writer *concurrent.Writer) {
 				FragmentData:    p[8:],
 			}
 			writer.FileServer.FileFragmentChan <- &fragment
-			//f, err := os.Create("./test.jpg")
-			//if err != nil {
-			//    log.Printf("create file fail, the err:%v",err)
-			//	return
-			//}
-			//defer f.Close()
-			//
-			//bw := bufio.NewWriter(f)
-			//_, ok := bw.Write(p[4:])
-			//if ok != nil {
-			//	log.Println(ok)
-			//}
-			//yes := bw.Flush()
-			//if yes != nil {
-			//	log.Println(yes)
-			//}
 		}
 	}
 }

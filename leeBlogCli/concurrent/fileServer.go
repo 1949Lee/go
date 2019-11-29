@@ -2,9 +2,9 @@ package concurrent
 
 import (
 	"bufio"
-	"github.com/gorilla/websocket"
 	"log"
 	"os"
+	"strings"
 )
 
 type FileStatusEnum struct {
@@ -77,8 +77,11 @@ type FileInfo struct {
 	// 文件ID
 	ID uint32
 
-	// 文件名称
+	// 文件名
 	Name string
+
+	// 服务文件名 ***.png
+	ServerName string
 
 	// 文件类型（扩展名）
 	ExtType string
@@ -105,7 +108,7 @@ type FileServer struct {
 type FileFragmentQueue []*FileFragment
 
 // 文件服务器
-func (s *FileServer) Run(w *websocket.Conn) {
+func (s *FileServer) Run(w *Writer) {
 	go func() {
 		//var fragmentQueue FileFragmentQueue
 		for fragment := range s.FileFragmentChan {
@@ -120,35 +123,49 @@ func (s *FileServer) Run(w *websocket.Conn) {
 			info := s.FileMap[fragment.FileID]
 
 			go func(fileInfo *FileInfo) {
+				var builder strings.Builder
+				builder.WriteString("./")
+				builder.WriteString(fileInfo.ServerName)
+				builder.WriteString(".lee")
+				temName := builder.String()
+				builder.Reset()
+				builder.WriteString("./")
+				builder.WriteString(fileInfo.ServerName)
+				builder.WriteString(".")
+				builder.WriteString(fileInfo.ExtType)
+				serverName := builder.String()
 				if fileInfo.ServerFile == nil {
 					//filepath.Dir()
-					f, err := os.Create("./" + string(fileInfo.ID) + ".lee")
+					f, err := os.Create(temName)
 					if err != nil {
 						log.Printf("create file fail, the err:%v", err)
-						if err := w.WriteJSON(ResponseResult{Type: 3, Code: FileStatus.InitFail}); err != nil {
-							log.Printf("write err:%v", err)
-						}
+						w.ResultChan <- &ResponseResult{Type: 3, Code: FileStatus.InitFail}
 					}
 					fileInfo.ServerFile = f
 					fileInfo.BufIOWriter = bufio.NewWriter(f)
-				} else {
-
-					_, ok := fileInfo.BufIOWriter.Write(fragment.FragmentData)
-					if ok != nil {
-						log.Printf("Write file fagment error, fileID:%d fileName:%s fragmentIndex:%d error is: %v \n", fileInfo.ID, fileInfo.Name, fragment.FragmentIndex, ok)
-					}
-					yes := fileInfo.BufIOWriter.Flush()
-					if yes != nil {
-						log.Println(yes)
-					}
-					// 表示文件数据到了最后。
-					if fragment.FileFragmentEnd {
-						err := os.Rename("./"+string(fileInfo.ID)+".lee", "./"+string(fileInfo.ID)+fileInfo.ExtType)
-						if err != nil {
-							log.Printf("Rename file(%s) error, error is: %v \n", string(fileInfo.ID)+".lee", err)
-						}
+				}
+				log.Printf("%d", fragment.FragmentIndex)
+				_, ok := fileInfo.BufIOWriter.Write(fragment.FragmentData)
+				if ok != nil {
+					log.Printf("Write file fagment error, fileID:%d fileName:%s fragmentIndex:%d error is: %v \n", fileInfo.ID, fileInfo.Name, fragment.FragmentIndex, ok)
+				}
+				yes := fileInfo.BufIOWriter.Flush()
+				if yes != nil {
+					log.Println(yes)
+				}
+				// 表示文件数据到了最后。
+				if fragment.FileFragmentEnd {
+					err := os.Rename(temName, serverName)
+					if err != nil {
+						log.Printf("Rename file(%s) error, error is: %v \n", temName, err)
+						delete(s.FileMap, fileInfo.ID)
 						fileInfo.ServerFile.Close()
+						if err := os.Remove(temName); err != nil {
+							log.Printf("Remove file(%s) error, error is: %v \n", temName, err)
+						}
+						w.ResultChan <- &ResponseResult{Type: 3, Code: FileStatus.ProcessFail}
 					}
+					fileInfo.ServerFile.Close()
 				}
 			}(info)
 		}

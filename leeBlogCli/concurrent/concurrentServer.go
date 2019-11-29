@@ -48,7 +48,7 @@ type Writer struct {
 func (w *Writer) Run() {
 
 	// 运行文件服务器
-	w.FileServer.Run(w.Conn)
+	w.FileServer.Run(w)
 
 	go func() {
 		var resultQueue ResponseResultQueue
