@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"leeBlogCli/concurrent"
 	"leeBlogCli/config"
 	"leeBlogCli/handler"
 	"net/http"
@@ -11,7 +12,7 @@ import (
 func main() {
 	http.HandleFunc("/once", handler.ReadMarkdownText)
 	http.HandleFunc(config.WebsocketParserPath, handler.WebSocketReadMarkdownText)
-	//http.HandleFunc(config.NewArticle, )
+	http.HandleFunc(config.NewArticle, concurrent.ReceivingFile)
 	fmt.Printf("server start with http://localhost:%s\n", config.ServerPort)
 	err := http.ListenAndServe(":"+config.ServerPort, nil)
 	if err != nil {
