@@ -109,15 +109,15 @@ func websocketLoop(conn *websocket.Conn, writer *concurrent.Writer) {
 func markdownParse(p string) concurrent.ResponseResult {
 	result := concurrent.ResponseResult{}
 	result.Code = 0
-	dataList, html := parser.MarkdownParse(p)
+	dataList, _ := parser.MarkdownParse(p)
 	result.Markdown = struct {
-		Text         string              `json:"text"`
-		List         []parser.TokenSlice `json:"list"`
-		MarkDownHtml string              `json:"html"`
+		Text string              `json:"text"`
+		List []parser.TokenSlice `json:"list"`
+		//MarkDownHtml string              `json:"html"`
 	}{
-		Text:         "success",
-		List:         dataList,
-		MarkDownHtml: html,
+		Text: "success",
+		List: dataList,
+		//MarkDownHtml: html,
 	}
 	return result
 }
