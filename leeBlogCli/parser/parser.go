@@ -584,6 +584,15 @@ func (l *Line) HeaderTitleParse() {
 		l.parseWithOther(func(line *Line) {
 			line.ImageParse()
 		})
+	} else if l.Origin[0] == '[' {
+		//(
+		//    (l.Origin[1] == 'x' || l.Origin[1] == 'X') && l.Origin[2] == ']' ||
+		//        (l.Origin[1] == ']' || (l.Origin[1] == ' ' && ))
+		//    ) {
+		if l.Origin[1] == ']' || (l.Origin[1] == ' ' && l.Origin[2] == ']') { // 未勾选的checklist
+
+		}
+
 	} else { // 行开头不是#，直接进行其他转换
 		for i := 0; i < len(l.Origin); i++ {
 			ch := l.Origin[i]
@@ -945,9 +954,19 @@ func isInBlock(lineText string) (bool, BlockResult) {
 		return false, BlockResult{}
 	}
 	switch realRune[0] {
-	case '*', '-': // 无序列表list
+	case '*', '-': // 无序列表list和check-list
 		if realRune[1] == ' ' {
-			return true, BlockResult{TokenType: "list", IndentCount: indentCount}
+			if realRune[2] == '[' {
+				if realRune[3] == 'x' && realRune[4] == ']' {
+					return true, BlockResult{TokenType: "check-list", IndentCount: indentCount}
+				} else if realRune[3] == ']' {
+					return true, BlockResult{TokenType: "check-list", IndentCount: indentCount}
+				} else {
+					return true, BlockResult{TokenType: "list", IndentCount: indentCount}
+				}
+			} else {
+				return true, BlockResult{TokenType: "list", IndentCount: indentCount}
+			}
 		}
 	case '>': // 样式块styled-block或文字引用block-quote
 		if realRune[1] == '>' && realRune[2] == '>' {
@@ -1015,6 +1034,9 @@ func blockParse(lines []string, index int, blockResult BlockResult) (int, TokenS
 	case "list":
 		i, tokens = listParse(lines, index, blockResult)
 		return i, tokens
+	case "check-list":
+		i, tokens = checkListParse(lines, index, blockResult)
+		return i, tokens
 	case "auto-order-list":
 		i, tokens = autoOrderListParse(lines, index, blockResult, nil)
 		return i, tokens
@@ -1034,7 +1056,7 @@ func blockParse(lines []string, index int, blockResult BlockResult) (int, TokenS
 	return index, nil
 }
 
-//有序列表转换方法
+// 有序列表转换方法
 func autoOrderListParse(lines []string, index int, blockResult BlockResult, level []string) (int, TokenSlice) {
 	originLevel := blockResult.IndentCount/4 + 1
 	tokens := TokenSlice{
@@ -1112,6 +1134,63 @@ func autoOrderListParse(lines []string, index int, blockResult BlockResult, leve
 				index = i
 				return index, tokens
 			}
+		}
+	}
+	index = i
+	return index, tokens
+}
+
+// check列表
+func checkListParse(lines []string, index int, blockResult BlockResult) (int, TokenSlice) {
+	originLevel := blockResult.IndentCount/4 + 1
+	tokens := TokenSlice{
+		{
+			TokenType:   "check-list",
+			NodeTagName: "ul",
+			NodeClass:   "check-list check-list-level-" + strconv.Itoa(originLevel),
+			Children:    TokenSlice{},
+		}}
+	originIndent := blockResult.IndentCount
+
+	i := index
+	for ; i < len(lines); i++ {
+		ok, temResult := isInBlock(lines[i])
+		if ok && temResult.TokenType == "check-list" { // check-list的新一行
+			if temResult.IndentCount >= originIndent && temResult.IndentCount < originIndent+4 { // check-list的新一行
+				tokens[0].Children = append(tokens[0].Children, Token{
+					TokenType:   "check-list-item",
+					NodeTagName: "li",
+					NodeClass:   "check-list-item check-list-item-level-" + strconv.Itoa(originLevel),
+					Children: TokenSlice{
+						{TokenType: "check-list-item-text-line-wrapper", NodeTagName: "div", NodeClass: "check-list-item-text-line-wrapper title", Children: TokenSlice{}},
+					},
+				})
+				text := []rune(lines[i])[2+temResult.IndentCount:]
+				line := Line{Origin: text, Tokens: TokenSlice{}}
+				line.LineParse()
+				tokens[0].Children[len(tokens[0].Children)-1].Children[0].Children = line.Tokens
+			} else if temResult.IndentCount >= originIndent+4 { //新的列表项，缩进符合下一级。
+				temIndex, subTokens := checkListParse(lines, i, temResult)
+				i = temIndex - 1
+				tokens[0].Children[len(tokens[0].Children)-1].Children = append(tokens[0].Children[len(tokens[0].Children)-1].Children, subTokens...)
+			} else if temResult.IndentCount < originIndent {
+				return i, tokens
+			}
+		} else if !ok && temResult.TokenType == "text" {
+			ci := len(tokens[0].Children) - 1
+			tokens[0].Children[ci].Children = append(tokens[0].Children[ci].Children, Token{
+				TokenType:   "check-list-item-text-line-wrapper",
+				NodeTagName: "div",
+				NodeClass:   "check-list-item-text-line-wrapper",
+				Children:    TokenSlice{}})
+			di := len(tokens[0].Children[ci].Children) - 1
+			text := []rune(strings.Replace(lines[i][originIndent:], " ", "&#8194;", temResult.IndentCount))
+			line := Line{Origin: text, Tokens: TokenSlice{}}
+			line.LineParse()
+			tokens[0].Children[ci].Children[di].Children = line.Tokens
+		} else { // list结束
+			index = i
+			return index, tokens
 		}
 	}
 	index = i
