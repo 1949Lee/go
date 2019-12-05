@@ -110,8 +110,14 @@ type Line struct {
 
 // Markdown的每一块
 type BlockResult struct {
-	TokenType   string
+	// 块的开头类型
+	TokenType string
+
+	// 块行首的空格数量（用于处理缩进、层级）
 	IndentCount int
+
+	// check列表的开头checkbox的勾选状态
+	CheckBoxStatus bool
 }
 
 // 行内未处理的准markdown字符

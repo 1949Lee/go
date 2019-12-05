@@ -584,15 +584,6 @@ func (l *Line) HeaderTitleParse() {
 		l.parseWithOther(func(line *Line) {
 			line.ImageParse()
 		})
-	} else if l.Origin[0] == '[' {
-		//(
-		//    (l.Origin[1] == 'x' || l.Origin[1] == 'X') && l.Origin[2] == ']' ||
-		//        (l.Origin[1] == ']' || (l.Origin[1] == ' ' && ))
-		//    ) {
-		if l.Origin[1] == ']' || (l.Origin[1] == ' ' && l.Origin[2] == ']') { // 未勾选的checklist
-
-		}
-
 	} else { // 行开头不是#，直接进行其他转换
 		for i := 0; i < len(l.Origin); i++ {
 			ch := l.Origin[i]
@@ -955,12 +946,12 @@ func isInBlock(lineText string) (bool, BlockResult) {
 	}
 	switch realRune[0] {
 	case '*', '-': // 无序列表list和check-list
-		if realRune[1] == ' ' {
-			if realRune[2] == '[' {
-				if realRune[3] == 'x' && realRune[4] == ']' {
-					return true, BlockResult{TokenType: "check-list", IndentCount: indentCount}
-				} else if realRune[3] == ']' {
-					return true, BlockResult{TokenType: "check-list", IndentCount: indentCount}
+		if len(realRune) >= 2 && realRune[1] == ' ' {
+			if len(realRune) >= 5 && realRune[2] == '[' {
+				if (realRune[3] == 'x' || realRune[3] == 'X') && realRune[4] == ']' { // 勾选的情况
+					return true, BlockResult{TokenType: "check-list", IndentCount: indentCount, CheckBoxStatus: true}
+				} else if realRune[3] == ']' || (realRune[3] == ' ' && realRune[4] == ']') { // 未勾选的情况
+					return true, BlockResult{TokenType: "check-list", IndentCount: indentCount, CheckBoxStatus: false}
 				} else {
 					return true, BlockResult{TokenType: "list", IndentCount: indentCount}
 				}
@@ -1165,10 +1156,11 @@ func checkListParse(lines []string, index int, blockResult BlockResult) (int, To
 						{TokenType: "check-list-item-text-line-wrapper", NodeTagName: "div", NodeClass: "check-list-item-text-line-wrapper title", Children: TokenSlice{}},
 					},
 				})
-				text := []rune(lines[i])[2+temResult.IndentCount:]
+				checkBox, checkIndent := getCheckToken(temResult.CheckBoxStatus)
+				text := []rune(lines[i])[2+temResult.IndentCount+checkIndent:]
 				line := Line{Origin: text, Tokens: TokenSlice{}}
 				line.LineParse()
-				tokens[0].Children[len(tokens[0].Children)-1].Children[0].Children = line.Tokens
+				tokens[0].Children[len(tokens[0].Children)-1].Children[0].Children = append(TokenSlice{checkBox}, line.Tokens...)
 			} else if temResult.IndentCount >= originIndent+4 { //新的列表项，缩进符合下一级。
 				temIndex, subTokens := checkListParse(lines, i, temResult)
 				i = temIndex - 1
@@ -1195,6 +1187,30 @@ func checkListParse(lines []string, index int, blockResult BlockResult) (int, To
 	}
 	index = i
 	return index, tokens
+}
+
+// 获取check列表的
+func getCheckToken(status bool) (checkBox Token, length int) {
+	length = 3
+	checkBox = Token{}
+	checkBoxAttrs := []NodeAttr{
+		{
+			Key:   "type",
+			Value: "checkbox",
+		},
+		{
+			Key:   "checked",
+			Value: "false",
+		},
+	}
+	if status {
+		checkBoxAttrs[1].Value = "true"
+	}
+	checkBox.NodeTagName = "input"
+	checkBox.NodeAttrs = checkBoxAttrs
+	checkBox.NodeClass = "check-list-checkbox"
+	checkBox.TokenType = "check-list-checkbox"
+	return checkBox, length
 }
 
 // 无序列表转换方法
