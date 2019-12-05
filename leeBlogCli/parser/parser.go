@@ -1004,12 +1004,27 @@ func MarkdownParse(markdownText string) ([]TokenSlice, string) {
 			i--
 			dataList = append(dataList, tokens)
 		} else {
-
 			line := Line{
-				Origin: []rune(strings.Replace(list[i], " ", "\u2002", blockResult.IndentCount)),
+				Origin: []rune(list[i]),
 				Tokens: TokenSlice{}}
-			line.LineParse()
-			dataList = append(dataList, line.Tokens)
+			var tokens TokenSlice
+			if blockResult.IndentCount == 4 {
+				line.Origin = []rune(list[i][blockResult.IndentCount:])
+				line.LineParse()
+				tokens = TokenSlice{
+					{
+						TokenType:   "text-indent-tag",
+						NodeTagName: "span",
+						NodeClass:   "text-indent-tag",
+						Text:        "缩进",
+					},
+				}
+				tokens = append(tokens, line.Tokens...)
+			} else {
+				line.LineParse()
+				tokens = line.Tokens
+			}
+			dataList = append(dataList, tokens)
 		}
 	}
 	return dataList, LinesToHtml(dataList)
