@@ -968,15 +968,15 @@ func isInBlock(lineText string) (bool, BlockResult) {
 	case '|': // 表格table
 		return true, BlockResult{TokenType: "table-block"}
 	case '`': // 代码块code-block
-		if realRune[1] == '`' && realRune[2] == '`' {
+		if len(realRune) > 2 && realRune[1] == '`' && realRune[2] == '`' {
 			return true, BlockResult{TokenType: "code-block"}
 		}
 	case '+': // 自动有序列表auto-order-list
-		if realRune[1] == ' ' {
+		if len(realRune) > 1 && realRune[1] == ' ' {
 			return true, BlockResult{TokenType: "auto-order-list", IndentCount: indentCount}
 		}
 	case ':': // 名词定义列表word-list
-		if realRune[1] == ':' {
+		if len(realRune) > 1 && realRune[1] == ':' {
 			return true, BlockResult{TokenType: "word-list"}
 		}
 	}
@@ -1006,7 +1006,7 @@ func MarkdownParse(markdownText string) ([]TokenSlice, string) {
 		} else {
 
 			line := Line{
-				Origin: []rune(strings.Replace(list[i], " ", "&#8194;", blockResult.IndentCount)),
+				Origin: []rune(strings.Replace(list[i], " ", "\u2002", blockResult.IndentCount)),
 				Tokens: TokenSlice{}}
 			line.LineParse()
 			dataList = append(dataList, line.Tokens)
@@ -1108,7 +1108,7 @@ func autoOrderListParse(lines []string, index int, blockResult BlockResult, leve
 				NodeClass:   "auto-order-list-item-text-line-wrapper",
 				Children:    TokenSlice{}})
 			di := len(tokens[0].Children[ci].Children) - 1
-			text := []rune(strings.Replace(lines[i][originIndent:], " ", "&#8194;", temResult.IndentCount))
+			text := []rune(strings.Replace(lines[i][originIndent:], " ", "\u2002", temResult.IndentCount))
 			line := Line{Origin: text, Tokens: TokenSlice{}}
 			line.LineParse()
 			tokens[0].Children[ci].Children[di].Children = line.Tokens
@@ -1176,7 +1176,7 @@ func checkListParse(lines []string, index int, blockResult BlockResult) (int, To
 				NodeClass:   "check-list-item-text-line-wrapper",
 				Children:    TokenSlice{}})
 			di := len(tokens[0].Children[ci].Children) - 1
-			text := []rune(strings.Replace(lines[i][originIndent:], " ", "&#8194;", temResult.IndentCount))
+			text := []rune(strings.Replace(lines[i][originIndent:], " ", "\u2002", temResult.IndentCount))
 			line := Line{Origin: text, Tokens: TokenSlice{}}
 			line.LineParse()
 			tokens[0].Children[ci].Children[di].Children = line.Tokens
@@ -1257,7 +1257,7 @@ func listParse(lines []string, index int, blockResult BlockResult) (int, TokenSl
 				NodeClass:   "list-item-text-line-wrapper",
 				Children:    TokenSlice{}})
 			di := len(tokens[0].Children[ci].Children) - 1
-			text := []rune(strings.Replace(lines[i][originIndent:], " ", "&#8194;", temResult.IndentCount))
+			text := []rune(strings.Replace(lines[i][originIndent:], " ", "\u2002", temResult.IndentCount))
 			line := Line{Origin: text, Tokens: TokenSlice{}}
 			line.LineParse()
 			tokens[0].Children[ci].Children[di].Children = line.Tokens
