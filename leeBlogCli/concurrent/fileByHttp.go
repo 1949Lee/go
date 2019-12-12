@@ -3,14 +3,12 @@ package concurrent
 import (
 	"bufio"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"leeBlogCli/config"
 	"log"
 	"net/http"
 	"os"
 	"strings"
-	"time"
 )
 
 type FileOptions struct {
@@ -136,7 +134,6 @@ func DeleteFile(writer http.ResponseWriter, r *http.Request) {
 		writer.WriteHeader(200)
 		return
 	}
-	t := time.Now()
 	//下面是接口真正的处理
 	writer.Header().Add("Access-Control-Allow-Credentials", "true")
 	body, _ := ioutil.ReadAll(r.Body)
@@ -174,5 +171,4 @@ func DeleteFile(writer http.ResponseWriter, r *http.Request) {
 	}
 
 	writer.Write([]byte(b))
-	fmt.Println("app elapsed:", time.Since(t))
 }
