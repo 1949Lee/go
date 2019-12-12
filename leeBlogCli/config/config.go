@@ -8,4 +8,6 @@ var (
 
 	// 服务开启的端口号
 	ServerPort string = "1314"
+
+	FilePath string = "article-file/"
 )

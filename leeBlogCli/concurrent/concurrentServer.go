@@ -10,7 +10,7 @@ import (
 type ResponseCodeType int
 
 type ResponseResult struct {
-	// 1表示markdown相关，2 表示文件准备相关，3表示文件上传相关。
+	// 1表示markdown相关，2 表示文件准备相关，3表示文件上传相关。4表示http删除上传文件相关。
 	Type uint8 `json:"type"`
 	Time *int  `json:"-" `
 
