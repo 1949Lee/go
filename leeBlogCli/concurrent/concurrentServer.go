@@ -58,7 +58,7 @@ func (w *Writer) Run() {
 			for range ticker {
 				result := resultQueue.Max()
 				if result != nil {
-					if err := w.Conn.WriteJSON(result); err != nil {
+					if err := w.Conn.WriteJSON(result); err != nil && err != websocket.ErrCloseSent {
 						log.Printf("write err:%v", err)
 					} else {
 						resultQueue = ResponseResultQueue{}
