@@ -12,11 +12,20 @@ type DBServer struct {
 	DB *sqlx.DB
 }
 
+type Author struct {
+	ID       string `db:"author_id"`
+	Nickname string `db:"author_nickname"`
+	Email    string `db:"author_email"`
+	Password string `db:"author_password"`
+	Motto    string `db:"author_motto"`
+	IsActive string `db:"author_is_active"`
+}
+
 // 打开数据库
 func (s *DBServer) Open() {
 
 	// 如果数据库连接未关闭，则关闭。
-	if err := s.DB.Ping(); err == nil {
+	if s.DB != nil {
 		_ = s.DB.Close()
 	}
 
@@ -32,6 +41,15 @@ func (s *DBServer) Open() {
 		log.Fatalln(err)
 	}
 	s.DB = db
+}
+
+func (s *DBServer) GetAuthor() {
+	people := make([]Author, 0)
+	err := s.DB.Select(&people, "SELECT * FROM author;")
+	if err != nil {
+		log.Printf("Select error：%v", err)
+	}
+	fmt.Println(people[0])
 }
 
 // 关闭数据库
