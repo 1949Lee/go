@@ -4,12 +4,16 @@ import (
 	"fmt"
 	"leeBlogCli/concurrent"
 	"leeBlogCli/config"
+	"leeBlogCli/dao"
 	"leeBlogCli/handler"
 	"net/http"
 	_ "net/http/pprof"
 )
 
 func main() {
+	db := dao.DBServer{}
+	db.Open()
+	defer db.Close()
 	http.HandleFunc("/once", handler.ReadMarkdownText)
 	http.HandleFunc(config.WebsocketParserPath, handler.WebSocketReadMarkdownText)
 	http.HandleFunc(config.NewFile, concurrent.ReceivingFile)
@@ -19,19 +23,4 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	//listener, err := net.Listen("tcp", ":1315")
-	//if err!=nil{
-	//    panic(err)
-	//}
-	//for {
-	//    conn, err := listener.Accept()
-	//    if err!=nil{
-	//        log.Printf("accept error:%v",err)
-	//        continue
-	//    }
-	//
-	//    go func(conn net.Conn) {
-	//        handler.SocketReadMarkdownText(conn)
-	//    }(conn)
-	//}
 }
