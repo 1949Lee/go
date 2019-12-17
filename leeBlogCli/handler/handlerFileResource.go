@@ -27,7 +27,7 @@ func FileResource(writer http.ResponseWriter, r *http.Request) {
 	writer.Header().Add("Access-Control-Allow-Credentials", "true")
 	requestUrl := r.URL.Path
 	filePath := requestUrl[len(config.FileResource):]
-	file, err := os.Open(config.FilePath + filePath)
+	file, err := os.Open(filePath)
 	defer file.Close()
 	if err != nil {
 		log.Println("static resource:", err)
