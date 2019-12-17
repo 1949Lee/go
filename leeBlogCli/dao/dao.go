@@ -43,15 +43,6 @@ func (s *DBServer) Open() {
 	s.DB = db
 }
 
-func (s *DBServer) GetAuthor() {
-	people := make([]Author, 0)
-	err := s.DB.Select(&people, "SELECT * FROM author;")
-	if err != nil {
-		log.Printf("Select error：%v", err)
-	}
-	fmt.Println(people[0])
-}
-
 // 关闭数据库
 func (s *DBServer) Close() {
 
