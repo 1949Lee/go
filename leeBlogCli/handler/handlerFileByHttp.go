@@ -1,20 +1,16 @@
-package concurrent
+package handler
 
 import (
 	"bufio"
 	"encoding/json"
 	"io/ioutil"
 	"leeBlogCli/config"
+	"leeBlogCli/definition"
 	"log"
 	"net/http"
 	"os"
 	"strings"
 )
-
-type FileOptions struct {
-	FileName  string
-	ArticleID string
-}
 
 // 根据传入的文章id和文件名得到最终文件名
 func getFileName(articleID string, fileName string) string {
@@ -57,7 +53,7 @@ func ReceivingFile(writer http.ResponseWriter, r *http.Request) {
 	}
 	//下面是接口真正的处理
 	writer.Header().Add("Access-Control-Allow-Credentials", "true")
-	result := ResponseResult{
+	result := definition.ResponseResult{
 		Type: 4,
 		Code: 0,
 		Data: "接收成功",
@@ -69,7 +65,7 @@ func ReceivingFile(writer http.ResponseWriter, r *http.Request) {
 		result.Code = 1
 		result.Data = "上传失败"
 	}
-	param := FileOptions{}
+	param := definition.FileOptions{}
 	param.ArticleID = r.FormValue("articleID")
 	if param.ArticleID == "" {
 		log.Printf("上传文件接口获取参数错误，缺少文章ID")
@@ -138,29 +134,29 @@ func DeleteFile(writer http.ResponseWriter, r *http.Request) {
 	writer.Header().Add("Access-Control-Allow-Credentials", "true")
 	body, _ := ioutil.ReadAll(r.Body)
 	defer r.Body.Close()
-	param := FileOptions{}
+	param := definition.FileOptions{}
 	err := json.Unmarshal(body, &param)
 	if err != nil {
-		b, _ := json.Marshal(ResponseResult{Code: 2, Type: 4, Data: "参数获取失败"})
+		b, _ := json.Marshal(definition.ResponseResult{Code: 2, Type: 4, Data: "参数获取失败"})
 		writer.Write(b)
 	}
 	if param.ArticleID == "" {
-		b, _ := json.Marshal(ResponseResult{Code: 1, Type: 4, Data: "参数文章ID缺失"})
+		b, _ := json.Marshal(definition.ResponseResult{Code: 1, Type: 4, Data: "参数文章ID缺失"})
 		writer.Write(b)
 	}
 
 	if param.FileName == "" {
-		b, _ := json.Marshal(ResponseResult{Code: 1, Type: 4, Data: "参数文件名缺失"})
+		b, _ := json.Marshal(definition.ResponseResult{Code: 1, Type: 4, Data: "参数文件名缺失"})
 		writer.Write(b)
 	}
 	err = os.Remove(getFileName(param.ArticleID, param.FileName))
 	if err != nil {
-		b, _ := json.Marshal(ResponseResult{Code: 1, Type: 4, Data: "删除失败"})
+		b, _ := json.Marshal(definition.ResponseResult{Code: 1, Type: 4, Data: "删除失败"})
 		log.Printf("删除文件失败，error：%v ", err)
 		writer.Write(b)
 	}
 
-	result := ResponseResult{
+	result := definition.ResponseResult{
 		Type: 4,
 		Code: 0,
 		Data: "删除成功",

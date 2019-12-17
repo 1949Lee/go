@@ -1,4 +1,4 @@
-package dao
+package definition
 
 // MySQL数据结构体：作者
 type Author struct {
