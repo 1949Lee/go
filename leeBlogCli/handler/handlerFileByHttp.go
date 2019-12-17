@@ -64,13 +64,19 @@ func ReceivingFile(writer http.ResponseWriter, r *http.Request) {
 		result.Code = 1
 		result.Data = "参数文章ID缺失"
 	}
+	fileres := definition.FileResponse{}
 	for _, v := range r.MultipartForm.File {
 		for i := 0; i < len(v); i++ {
+			fileResItem := definition.FileResponseItem{
+				FileName: v[i].Filename,
+				URL:      "http://localhost:1314" + config.FileResource + getFileName(param.ArticleID, v[i].Filename),
+			}
 			file, err := v[i].Open()
 			if err != nil {
 				log.Printf("ReceivingFile Handler when FormFile Error:%v", err)
 				result.Code = 1
 				result.Data = "上传文件打开失败"
+				fileResItem.URL = ""
 			}
 			buffer := bufio.NewReader(file)
 			articleID, atoIErr := strconv.Atoi(param.ArticleID)
@@ -79,28 +85,39 @@ func ReceivingFile(writer http.ResponseWriter, r *http.Request) {
 					log.Printf("ReceivingFile Handler when os.MkdirAll Error:%v", err)
 					result.Code = 1
 					result.Data = "服务器保存文件失败"
+					fileResItem.URL = ""
 				}
 			} else {
 				log.Printf("上传文件接口获取参数错误，文章ID值不合法")
 				result.Code = 1
 				result.Data = "参数文章ID值不合法"
+				fileResItem.URL = ""
 			}
 			f, err := os.Create(getFileName(param.ArticleID, v[i].Filename))
 			if err != nil {
 				log.Printf("ReceivingFile Handler when os.Create Error:%v", err)
 				result.Code = 1
 				result.Data = "服务器保存文件失败"
+				fileResItem.URL = ""
 			}
 			_, err = buffer.WriteTo(f)
 			if err != nil {
 				log.Printf("ReceivingFile Handler when buffer.WriteTo Error:%v", err)
 				result.Code = 1
 				result.Data = "服务器保存文件失败"
+				fileResItem.URL = ""
 			}
 			_ = file.Close()
+			if fileResItem.URL != "" {
+				fileres = append(fileres, fileResItem)
+			}
 		}
 	}
 	var b []byte
+
+	if len(fileres) > 0 {
+		result.Data = fileres
+	}
 	if b, err = json.Marshal(result); err != nil {
 		log.Printf("ReceivingFile Handler when json.Marshal Error:%v", err)
 		result.Code = 1

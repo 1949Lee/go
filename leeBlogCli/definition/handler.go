@@ -38,3 +38,14 @@ func (q *ResponseResultQueue) Max() *ResponseResult {
 	}
 	return result
 }
+
+type FileResponseItem struct {
+	// 文件名
+	FileName string `json:"fileName"`
+
+	// 文件URL
+	URL string `json:"url"`
+}
+
+// 服务器收到文件后，返回的结果体
+type FileResponse []FileResponseItem

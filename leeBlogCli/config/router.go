@@ -6,4 +6,5 @@ var (
 	Site                = "/"
 	NewFile             = Site + "new-file"
 	DeleteFile          = Site + "delete-file"
+	FileResource        = Site + "static/"
 )
