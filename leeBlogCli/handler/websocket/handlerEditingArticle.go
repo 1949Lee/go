@@ -9,6 +9,7 @@ import (
 	"leeBlogCli/config"
 	"leeBlogCli/definition"
 	"leeBlogCli/parser"
+	"leeBlogCli/utils"
 	"log"
 	"net/http"
 	"os"
@@ -98,8 +99,9 @@ func websocketLoop(conn *websocket.Conn, writer *WebSocketWriter) {
 					}
 				}()
 				var obj = definition.ParamEditingArticle{
-					Type:  1,
-					Files: nil,
+					ArticleID: -1,
+					Type:      1,
+					Files:     nil,
 				}
 
 				if err := json.Unmarshal(p, &obj); err != nil {
@@ -118,8 +120,13 @@ func websocketLoop(conn *websocket.Conn, writer *WebSocketWriter) {
 					result.Type = 1
 					writer.ResultChan <- &result
 				case 2:
-					if obj.Files != nil {
+					if obj.Files != nil && obj.ArticleID != -1 {
 						//log.Printf("%v", obj.Files)
+						if err := os.MkdirAll(utils.GetFilePath(obj.ArticleID), os.ModePerm); err != nil {
+							//log.Printf("ReceivingFile Handler when os.MkdirAll Error:%v", err)
+							//result.Code = 1
+							//result.Data = "服务器保存文件失败"
+						}
 						for i := range obj.Files {
 							obj.Files[i].ID = uuid2.New().ID()
 							writer.FileServer.FileMap[obj.Files[i].ID] = &definition.FileInfo{
@@ -129,6 +136,7 @@ func websocketLoop(conn *websocket.Conn, writer *WebSocketWriter) {
 								ServerFile:  nil,
 								BufIOWriter: nil,
 								ServerName:  strconv.FormatUint(uint64(obj.Files[i].ID), 10),
+								ArticleID:   obj.ArticleID,
 							}
 						}
 						result := definition.ResponseResult{Type: 2, Time: t, Code: 0, Files: obj.Files}
@@ -213,12 +221,16 @@ func (s *FileServer) Run(w *WebSocketWriter) {
 
 			go func(fileInfo *definition.FileInfo) {
 				var builder strings.Builder
-				builder.WriteString("./")
+				builder.WriteString(config.FilePath)
+				builder.WriteString(strconv.Itoa(info.ArticleID))
+				builder.WriteString("/")
 				builder.WriteString(fileInfo.ServerName)
 				builder.WriteString(".lee")
 				temName := builder.String()
 				builder.Reset()
-				builder.WriteString("./")
+				builder.WriteString(config.FilePath)
+				builder.WriteString(strconv.Itoa(info.ArticleID))
+				builder.WriteString("/")
 				builder.WriteString(fileInfo.ServerName)
 				builder.WriteString(".")
 				builder.WriteString(fileInfo.ExtType)

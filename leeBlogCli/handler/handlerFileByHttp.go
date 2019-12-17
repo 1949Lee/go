@@ -6,9 +6,11 @@ import (
 	"io/ioutil"
 	"leeBlogCli/config"
 	"leeBlogCli/definition"
+	"leeBlogCli/utils"
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 )
 
@@ -19,16 +21,6 @@ func getFileName(articleID string, fileName string) string {
 	builder.WriteString(articleID)
 	builder.WriteString("/")
 	builder.WriteString(fileName)
-	return builder.String()
-}
-
-// 根据传入的文章id和文件名得到最终文件路径
-func getFilePath(articleID string) string {
-	builder := strings.Builder{}
-	builder.WriteString(config.FilePath)
-	builder.WriteString(articleID)
-	//builder.WriteString("/")
-	//builder.WriteString(fileName)
 	return builder.String()
 }
 
@@ -81,10 +73,17 @@ func ReceivingFile(writer http.ResponseWriter, r *http.Request) {
 				result.Data = "上传文件打开失败"
 			}
 			buffer := bufio.NewReader(file)
-			if err := os.MkdirAll(getFilePath(param.ArticleID), os.ModePerm); err != nil {
-				log.Printf("ReceivingFile Handler when os.MkdirAll Error:%v", err)
+			articleID, atoIErr := strconv.Atoi(param.ArticleID)
+			if atoIErr == nil {
+				if err := os.MkdirAll(utils.GetFilePath(articleID), os.ModePerm); err != nil {
+					log.Printf("ReceivingFile Handler when os.MkdirAll Error:%v", err)
+					result.Code = 1
+					result.Data = "服务器保存文件失败"
+				}
+			} else {
+				log.Printf("上传文件接口获取参数错误，文章ID值不合法")
 				result.Code = 1
-				result.Data = "服务器保存文件失败"
+				result.Data = "参数文章ID值不合法"
 			}
 			f, err := os.Create(getFileName(param.ArticleID, v[i].Filename))
 			if err != nil {

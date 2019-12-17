@@ -91,6 +91,9 @@ type FileInfo struct {
 	ServerFile *os.File
 
 	BufIOWriter *bufio.Writer
+
+	// 文章ID
+	ArticleID int
 }
 
 // 接收到的文件的列表

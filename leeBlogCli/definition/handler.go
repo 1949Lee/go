@@ -1,9 +1,10 @@
 package definition
 
 type ParamEditingArticle struct {
-	Type  uint8
-	Text  string
-	Files []File
+	ArticleID int
+	Type      uint8
+	Text      string
+	Files     []File
 }
 
 type ResponseCodeType int
