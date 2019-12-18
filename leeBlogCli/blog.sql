@@ -11,7 +11,7 @@
  Target Server Version : 50638
  File Encoding         : 65001
 
- Date: 31/08/2018 10:45:27
+ Date: 18/12/2019 16:51:10
 */
 
 SET NAMES utf8mb4;
@@ -23,6 +23,7 @@ SET FOREIGN_KEY_CHECKS = 0;
 DROP TABLE IF EXISTS `article`;
 CREATE TABLE `article` (
   `article_id` int(1) unsigned NOT NULL AUTO_INCREMENT COMMENT '文章id，自增',
+  `article_ctg` int(1) unsigned DEFAULT NULL COMMENT '文章分类',
   `article_title` varchar(255) NOT NULL COMMENT '文章标题',
   `article_author` int(1) unsigned DEFAULT NULL COMMENT '文章作者ID，外键',
   `article_tags` varchar(255) DEFAULT NULL COMMENT '文章标签名字，逗号隔开',
@@ -33,7 +34,9 @@ CREATE TABLE `article` (
   `article_updatetime` timestamp NOT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '文章修改时间',
   PRIMARY KEY (`article_id`),
   KEY `fk_article_author` (`article_author`),
-  CONSTRAINT `fk_article_author` FOREIGN KEY (`article_author`) REFERENCES `author` (`author_id`) ON DELETE SET NULL
+  KEY `fk_article_ctg` (`article_ctg`),
+  CONSTRAINT `fk_article_author` FOREIGN KEY (`article_author`) REFERENCES `author` (`author_id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT `fk_article_ctg` FOREIGN KEY (`article_ctg`) REFERENCES `category` (`ctg_id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='文章表：1、标签会存一组标签名字和标签id，都分别用逗号隔开 2、文章摘要用于显示文章简介';
 
 -- ----------------------------
@@ -52,6 +55,13 @@ CREATE TABLE `author` (
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COMMENT='作者表：方便以后扩展（1、作者邮箱：author_email；2、作者昵称：author_nickname；3、作者密码：author_password；4、作者座右铭：author_motto）';
 
 -- ----------------------------
+-- Records of author
+-- ----------------------------
+BEGIN;
+INSERT INTO `author` VALUES (1, '阁主', 'lijiaxuan0829@sina.com', '19491001', '相思难表，梦魂无据，惟有归来是', b'1');
+COMMIT;
+
+-- ----------------------------
 -- Table structure for category
 -- ----------------------------
 DROP TABLE IF EXISTS `category`;
@@ -59,7 +69,15 @@ CREATE TABLE `category` (
   `ctg_id` int(1) unsigned NOT NULL AUTO_INCREMENT COMMENT '类别id，自增',
   `ctg_name` varchar(8) NOT NULL COMMENT '类别名称，限制长度',
   PRIMARY KEY (`ctg_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='类别表：用于文章大方向的分类（技术、生活等）';
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT='类别表：用于文章大方向的分类（技术、生活等）';
+
+-- ----------------------------
+-- Records of category
+-- ----------------------------
+BEGIN;
+INSERT INTO `category` VALUES (1, '技术');
+INSERT INTO `category` VALUES (2, '生活');
+COMMIT;
 
 -- ----------------------------
 -- Table structure for tag
@@ -71,46 +89,14 @@ CREATE TABLE `tag` (
   `tag_name` varchar(30) NOT NULL COMMENT '标签名字',
   PRIMARY KEY (`tag_id`),
   KEY `index_ctg_name` (`tag_category`,`tag_name`),
-  CONSTRAINT `fk_tag_ctg` FOREIGN KEY (`tag_category`) REFERENCES `category` (`ctg_id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='标签表：博客的所有标签（1、标签名称：tag_name；2、标签创建时间：tag_createtime;3、标签所属类别：tag_category）';
+  CONSTRAINT `fk_tag_ctg` FOREIGN KEY (`tag_category`) REFERENCES `category` (`ctg_id`) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COMMENT='标签表：博客的所有标签（1、标签名称：tag_name；2、标签创建时间：tag_createtime;3、标签所属类别：tag_category）';
 
 -- ----------------------------
--- Triggers structure for table author
+-- Records of tag
 -- ----------------------------
-DROP TRIGGER IF EXISTS `author_no_delete`;
-delimiter ;;
-CREATE TRIGGER `author_no_delete` BEFORE DELETE ON `author` FOR EACH ROW BEGIN
-DECLARE	msg VARCHAR (255);
-SET msg = "表中的记录无法删除";
-SIGNAL SQLSTATE 'HY000' SET mysql_errno = 22, message_text = msg;-- HY000为系统内部错误号，22为自定义的显示错误号，msg为错误文本
-END
-;;
-delimiter ;
-
--- ----------------------------
--- Triggers structure for table category
--- ----------------------------
-DROP TRIGGER IF EXISTS `ctg_no_delete`;
-delimiter ;;
-CREATE TRIGGER `ctg_no_delete` BEFORE DELETE ON `category` FOR EACH ROW BEGIN
-DECLARE	msg VARCHAR (255);
-SET msg = "表中的记录无法删除";
-SIGNAL SQLSTATE 'HY000' SET mysql_errno = 22, message_text = msg;-- HY000为系统内部错误号，22为自定义的显示错误号，msg为错误文本
-END
-;;
-delimiter ;
-
--- ----------------------------
--- Triggers structure for table tag
--- ----------------------------
-DROP TRIGGER IF EXISTS `tag_no_delete`;
-delimiter ;;
-CREATE TRIGGER `tag_no_delete` BEFORE DELETE ON `tag` FOR EACH ROW BEGIN
-DECLARE	msg VARCHAR (255);
-SET msg = "表中的记录无法删除";
-SIGNAL SQLSTATE 'HY000' SET mysql_errno = 22, message_text = msg;-- HY000为系统内部错误号，22为自定义的显示错误号，msg为错误文本
-END
-;;
-delimiter ;
+BEGIN;
+INSERT INTO `tag` VALUES (1, NULL, 'react');
+COMMIT;
 
 SET FOREIGN_KEY_CHECKS = 1;
