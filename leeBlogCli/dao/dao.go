@@ -31,6 +31,7 @@ func (s *DBServer) Open() {
 	if err != nil {
 		log.Fatalln(err)
 	}
+	log.Println("数据库链接成功")
 	s.DB = db
 }
 
@@ -39,6 +40,7 @@ func (s *DBServer) Close() {
 
 	// 如果数据库连接未关闭，则关闭。
 	if err := s.DB.Ping(); err == nil {
+		log.Println("数据库关闭成功")
 		_ = s.DB.Close()
 	}
 }

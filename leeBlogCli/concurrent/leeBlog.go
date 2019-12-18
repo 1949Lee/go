@@ -9,8 +9,9 @@ type Blog struct {
 func (b *Blog) Run() {
 	db := dao.DBServer{}
 	db.Open()
+	b.dao = &db
 }
 
 func (b *Blog) Close() {
-	defer b.dao.Close()
+	b.dao.Close()
 }
