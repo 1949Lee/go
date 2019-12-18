@@ -7,8 +7,7 @@ import (
 	"net/http"
 )
 
-// 保存或更新文章
-func (api *API) SaveArticle(writer http.ResponseWriter, r *http.Request) {
+func (api *API) NewArticleID(writer http.ResponseWriter, r *http.Request) {
 	result := definition.ResponseResult{
 		Type: 4,
 		Code: 0,
