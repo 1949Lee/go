@@ -15,9 +15,9 @@ func main() {
 	blog.Run()
 	defer blog.Close()
 	http.HandleFunc(config.WebsocketParserPath, websocketHandler.WebSocketReadMarkdownText)
-	http.HandleFunc(config.NewFile, handler.ReceivingFile)
-	http.HandleFunc(config.DeleteFile, handler.DeleteFile)
-	http.HandleFunc(config.FileResource, handler.FileResource)
+	http.HandleFunc(config.NewFile, handler.APIInterceptor(handler.ReceivingFile))
+	http.HandleFunc(config.DeleteFile, handler.APIInterceptor(handler.DeleteFile))
+	http.HandleFunc(config.FileResource, handler.ResourceInterceptor(handler.FileResource))
 	fmt.Printf("server start with http://localhost:%s\n", config.ServerPort)
 	err := http.ListenAndServe(":"+config.ServerPort, nil)
 	if err != nil {

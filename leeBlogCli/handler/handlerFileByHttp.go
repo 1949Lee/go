@@ -26,25 +26,6 @@ func getFileName(articleID string, fileName string) string {
 
 // 接收上传的文件
 func ReceivingFile(writer http.ResponseWriter, r *http.Request) {
-	defer func() {
-		if err := recover(); err != nil {
-			log.Println(err)
-		}
-	}()
-
-	/**
-	  此部分代码可以提取出来。*/
-	//设置跨域的相应头CORS，CORS参考：https://developer.mozilla.org/zh-CN/docs/Web/HTTP/Access_control_CORS
-	writer.Header().Add("Access-Control-Allow-Origin", "http://localhost:8080")
-	writer.Header().Add("Access-Control-Allow-Methods", "POST, OPTIONS")
-	writer.Header().Add("Access-Control-Allow-Headers", "Content-Type")
-	// 请求方发送请求时当请求为options时，直接返回200。
-	if r.Method == "OPTIONS" {
-		writer.WriteHeader(200)
-		return
-	}
-	//下面是接口真正的处理
-	writer.Header().Add("Access-Control-Allow-Credentials", "true")
 	result := definition.ResponseResult{
 		Type: 4,
 		Code: 0,
@@ -129,25 +110,6 @@ func ReceivingFile(writer http.ResponseWriter, r *http.Request) {
 
 // 删除上传的文件
 func DeleteFile(writer http.ResponseWriter, r *http.Request) {
-	defer func() {
-		if err := recover(); err != nil {
-			log.Println(err)
-		}
-	}()
-
-	/**
-	  此部分代码可以提取出来。*/
-	//设置跨域的相应头CORS，CORS参考：https://developer.mozilla.org/zh-CN/docs/Web/HTTP/Access_control_CORS
-	writer.Header().Add("Access-Control-Allow-Origin", "http://localhost:8080")
-	writer.Header().Add("Access-Control-Allow-Methods", "POST, OPTIONS")
-	writer.Header().Add("Access-Control-Allow-Headers", "Content-Type")
-	// 请求方发送请求时当请求为options时，直接返回200。
-	if r.Method == "OPTIONS" {
-		writer.WriteHeader(200)
-		return
-	}
-	//下面是接口真正的处理
-	writer.Header().Add("Access-Control-Allow-Credentials", "true")
 	body, _ := ioutil.ReadAll(r.Body)
 	defer r.Body.Close()
 	param := definition.FileOptions{}
