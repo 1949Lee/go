@@ -8,7 +8,7 @@ import (
 type HttpHandler func(http.ResponseWriter, *http.Request)
 
 // Http拦截器
-func HttpInterceptor(handler HttpHandler, header map[string]string) HttpHandler {
+func (api *API) HttpInterceptor(handler HttpHandler, header map[string]string) HttpHandler {
 	return func(writer http.ResponseWriter, r *http.Request) {
 		defer func() {
 			if err := recover(); err != nil {
@@ -31,17 +31,17 @@ func HttpInterceptor(handler HttpHandler, header map[string]string) HttpHandler 
 }
 
 // 普通接口拦截
-func APIInterceptor(handler HttpHandler) HttpHandler {
-	return HttpInterceptor(handler, map[string]string{
+func (api *API) APIInterceptor(handler HttpHandler) HttpHandler {
+	return api.HttpInterceptor(handler, map[string]string{
 		"Access-Control-Allow-Methods": "POST, OPTIONS",
 		"Access-Control-Allow-Headers": "POST, Content-Type",
 	})
 }
 
 // 资源拦截
-func ResourceInterceptor(handler HttpHandler) HttpHandler {
+func (api *API) ResourceInterceptor(handler HttpHandler) HttpHandler {
 	// 需要加严格的验证。
-	return HttpInterceptor(handler, map[string]string{
+	return api.HttpInterceptor(handler, map[string]string{
 		"Access-Control-Allow-Methods": "GET",
 	})
 }

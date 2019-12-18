@@ -172,7 +172,7 @@ func markdownParse(p string) definition.ResponseResult {
 	return result
 }
 
-func WebSocketReadMarkdownText(writer http.ResponseWriter, r *http.Request) {
+func (api *API) WebSocketReadMarkdownText(writer http.ResponseWriter, r *http.Request) {
 	//header := http.Header{}
 	//header.Add("Access-Control-Allow-Origin", "http://localhost:3000")
 	conn, err := upgrade.Upgrade(writer, r, nil)

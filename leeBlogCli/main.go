@@ -4,20 +4,18 @@ import (
 	"fmt"
 	"leeBlogCli/concurrent"
 	"leeBlogCli/config"
-	"leeBlogCli/handler"
-	websocketHandler "leeBlogCli/handler/websocket"
 	"net/http"
 	_ "net/http/pprof"
 )
 
 func main() {
-	blog := concurrent.Blog{}
-	blog.Run()
-	defer blog.Close()
-	http.HandleFunc(config.WebsocketParserPath, websocketHandler.WebSocketReadMarkdownText)
-	http.HandleFunc(config.NewFile, handler.APIInterceptor(handler.ReceivingFile))
-	http.HandleFunc(config.DeleteFile, handler.APIInterceptor(handler.DeleteFile))
-	http.HandleFunc(config.FileResource, handler.ResourceInterceptor(handler.FileResource))
+	lee := concurrent.Lee{}
+	lee.Run()
+	defer lee.Close()
+	http.HandleFunc(config.WebsocketParserPath, lee.API.WebSocketReadMarkdownText)
+	http.HandleFunc(config.NewFile, lee.API.APIInterceptor(lee.API.ReceivingFile))
+	http.HandleFunc(config.DeleteFile, lee.API.APIInterceptor(lee.API.DeleteFile))
+	http.HandleFunc(config.FileResource, lee.API.ResourceInterceptor(lee.API.FileResource))
 	fmt.Printf("server start with http://localhost:%s\n", config.ServerPort)
 	err := http.ListenAndServe(":"+config.ServerPort, nil)
 	if err != nil {

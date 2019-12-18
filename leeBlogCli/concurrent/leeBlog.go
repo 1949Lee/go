@@ -1,17 +1,27 @@
 package concurrent
 
-import "leeBlogCli/dao"
+import (
+	"leeBlogCli/dao"
+	"leeBlogCli/handler"
+	"leeBlogCli/server"
+)
 
-type Blog struct {
-	dao *dao.DBServer
+type Lee struct {
+	API *handler.API
 }
 
-func (b *Blog) Run() {
-	db := dao.DBServer{}
-	db.Open()
-	b.dao = &db
+func (b *Lee) Run() {
+	daoServer := dao.DBServer{}
+	daoServer.Open()
+	blog := server.Blog{
+		Dao: &daoServer,
+	}
+	api := handler.API{
+		Server: &blog,
+	}
+	b.API = &api
 }
 
-func (b *Blog) Close() {
-	b.dao.Close()
+func (b *Lee) Close() {
+	b.API.Server.Dao.Close()
 }

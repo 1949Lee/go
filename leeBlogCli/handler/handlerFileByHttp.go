@@ -25,7 +25,7 @@ func getFileName(articleID string, fileName string) string {
 }
 
 // 接收上传的文件
-func ReceivingFile(writer http.ResponseWriter, r *http.Request) {
+func (api *API) ReceivingFile(writer http.ResponseWriter, r *http.Request) {
 	result := definition.ResponseResult{
 		Type: 4,
 		Code: 0,
@@ -109,7 +109,7 @@ func ReceivingFile(writer http.ResponseWriter, r *http.Request) {
 }
 
 // 删除上传的文件
-func DeleteFile(writer http.ResponseWriter, r *http.Request) {
+func (api *API) DeleteFile(writer http.ResponseWriter, r *http.Request) {
 	body, _ := ioutil.ReadAll(r.Body)
 	defer r.Body.Close()
 	param := definition.FileOptions{}

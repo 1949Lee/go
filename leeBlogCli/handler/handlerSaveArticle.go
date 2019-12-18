@@ -8,7 +8,7 @@ import (
 )
 
 // 保存或更新文章
-func SaveArticle(writer http.ResponseWriter, r *http.Request) {
+func (api *API) SaveArticle(writer http.ResponseWriter, r *http.Request) {
 	defer func() {
 		if err := recover(); err != nil {
 			log.Println(err)

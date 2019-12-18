@@ -8,7 +8,7 @@ import (
 	"os"
 )
 
-func FileResource(writer http.ResponseWriter, r *http.Request) {
+func (api *API) FileResource(writer http.ResponseWriter, r *http.Request) {
 	writer.Header().Add("Access-Control-Allow-Credentials", "true")
 	requestUrl := r.URL.Path
 	filePath := requestUrl[len(config.FileResource):]
