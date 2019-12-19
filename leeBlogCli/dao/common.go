@@ -1,8 +1,8 @@
 package dao
 
 import (
-	"database/sql"
-	"log"
+    "database/sql"
+    "log"
 )
 
 func (s *DBServer) NextArticleID() (ID int32) {
