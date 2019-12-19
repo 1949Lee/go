@@ -21,6 +21,13 @@ type ResponseResult struct {
 	Markdown interface{}      `json:"markdown"`
 }
 
+type APIResult struct {
+	// code码开头第一位表示type类型的值。如文件上传相关则为形如：3XX
+	Code    ResponseCodeType `json:"code"`
+	Data    interface{}      `json:"data"`
+	Message interface{}      `json:"message"`
+}
+
 type ResponseResultQueue []*ResponseResult
 
 func (q *ResponseResultQueue) Max() *ResponseResult {
