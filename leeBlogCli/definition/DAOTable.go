@@ -31,7 +31,12 @@ type Category struct {
 
 // MySQL数据结构体：文章标签
 type Tag struct {
-	ID         int    `db:"tag_id"`
-	CategoryID string `db:"tag_category"`
-	Name       string `db:"tag_name"`
+	// 标签ID
+	ID int32 `json:"id" db:"tag_id"`
+
+	// 标签名称
+	Name string `json:"name" db:"tag_name"`
+
+	// 标签所属分类ID
+	CategoryID string `json:"category_id" db:"tag_category"`
 }

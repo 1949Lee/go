@@ -242,3 +242,7 @@ Commands:
 + 使用put或post创建或修改数据，使用post可以省略id
 + 用get获取各种数据。
 + Get <index>/<type>/_search?q=全文搜索关键。来全文搜索
+
+### MySQL:database/sql默认不支持一个查询执行多条sql语句
+需要在链接数据库的时候添加参数
+帖子详情https://blog.csdn.net/raogeeg/article/details/94452405

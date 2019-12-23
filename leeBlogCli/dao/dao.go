@@ -21,7 +21,7 @@ func (s *DBServer) Open() {
 	}
 
 	//连接数据库
-	conStr := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4",
+	conStr := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&multiStatements=true",
 		config.DBUserName,
 		config.DBUserPassword,
 		config.DBIP,
