@@ -54,18 +54,22 @@ func (s *DBServer) SelectTagsGroupByCategory() (c []definition.CategoryWithTags,
 		if c[i].ID == 0 {
 			continue
 		}
-		ok := tRows.NextResultSet()
-		if ok {
-			tags := make([]definition.Tag, 0)
-			tag := definition.Tag{}
-			for rows.Next() {
-				err := rows.StructScan(&tag)
-				if err != nil {
-					log.Printf("%v", err)
-				}
-				tags = append(tags, tag)
+		tags := make([]definition.Tag, 0)
+		tag := definition.Tag{}
+		for tRows.Next() {
+			err := tRows.StructScan(&tag)
+			if err != nil {
+				log.Printf("%v", err)
 			}
-			c[i].Tags = tags
+			tags = append(tags, tag)
+		}
+		if len(tags) == 0 {
+			tags = nil
+		}
+		c[i].Tags = tags
+		ok := tRows.NextResultSet()
+		if !ok {
+			break
 		}
 	}
 	return c, nil
