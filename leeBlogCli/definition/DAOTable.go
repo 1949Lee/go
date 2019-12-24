@@ -38,5 +38,5 @@ type Tag struct {
 	Name string `json:"name" db:"tag_name"`
 
 	// 标签所属分类ID
-	CategoryID string `json:"categoryID" db:"tag_category"`
+	CategoryID int32 `json:"categoryID" db:"tag_category"`
 }
