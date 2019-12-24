@@ -17,6 +17,18 @@ var (
 	// 接口路由 获取分类，并查询每个分类下的标签
 	TagsGroupByCategory = Site + "categories-with-tags"
 
+	// 接口路由 添加新标签
+	NewTag = Site + "new-tag"
+
+	// 接口路由 删除标签
+	DeleteTag = Site + "delete-tag"
+
+	// 接口路由 添加新分类
+	NewCategory = Site + "new-category"
+
+	// 接口路由 删除分类
+	DeleteCategory = Site + "delete-category"
+
 	// 静态资源路由
 	FileResource = Site + "static/"
 )
