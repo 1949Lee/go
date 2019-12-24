@@ -66,33 +66,48 @@ func (api *API) NewTag(writer http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	//result.Data = api.Server.GetTagsGroupByCategory()
-	result.Data = param
+	result.Data = api.Server.NewTag(param)
 	b, err := json.Marshal(result)
-	//if err != nil {
-	//    log.Printf("GetTagsGroupByCategory接口返回数据，转换json失败:%v", err)
-	//    result.Code = 1
-	//    result.Message = "获取错误"
-	//    result.Data = nil
-	//}
+	if err != nil {
+		log.Printf("NewTag接口返回数据，转换json失败:%v", err)
+		result.Code = 1
+		result.Message = "添加失败"
+		result.Data = nil
+	}
 
 	writer.Write(b)
 }
 
 // 删除标签的API
 func (api *API) DeleteTag(writer http.ResponseWriter, r *http.Request) {
+	param := definition.Tag{
+		ID: -1,
+	}
+	rData, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		log.Printf("%v", err)
+	}
+	err = json.Unmarshal(rData, &param)
+	if err != nil {
+		log.Printf("%v", err)
+	}
 	result := definition.APIResult{
 		Code: 0,
 		Data: nil,
 	}
 	defer r.Body.Close()
 
-	result.Data = api.Server.GetTagsGroupByCategory()
+	ok := api.Server.DeleteTag(param)
+	if !ok {
+		result.Code = 1
+		result.Message = "删除失败"
+		result.Data = nil
+	}
 	b, err := json.Marshal(result)
 	if err != nil {
-		log.Printf("GetTagsGroupByCategory接口返回数据，转换json失败:%v", err)
+		log.Printf("DeleteTag接口返回数据，转换json失败:%v", err)
 		result.Code = 1
-		result.Message = "获取错误"
+		result.Message = "删除失败"
 		result.Data = nil
 	}
 

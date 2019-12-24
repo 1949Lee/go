@@ -18,3 +18,23 @@ func (b *Blog) GetTagsGroupByCategory() (c []definition.CategoryWithTags) {
 		return make([]definition.CategoryWithTags, 0)
 	}
 }
+
+func (b *Blog) NewTag(param definition.Tag) (tag definition.Tag) {
+	tag.ID = -1
+	ID := b.Dao.InsertTag(param)
+	if ID == -1 {
+		return tag
+	}
+	tag.ID = ID
+	tag.Name = param.Name
+	tag.CategoryID = param.CategoryID
+	return tag
+}
+
+func (b *Blog) DeleteTag(param definition.Tag) bool {
+	ok := b.Dao.DeleteTag(param)
+	if !ok {
+		return false
+	}
+	return true
+}
