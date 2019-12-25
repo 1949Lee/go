@@ -106,3 +106,35 @@ func (s *DBServer) DeleteTag(tag definition.Tag) bool {
 		return true
 	}
 }
+
+func (s *DBServer) InsertCategory(ctg definition.Category) (ID int32) {
+	rows := s.DB.QueryRow("SELECT MAX(ctg_id) + 1 as ID FROM category;")
+	var col sql.NullInt32
+	err := rows.Scan(&col)
+	if err != nil {
+		log.Printf("%v", err)
+	}
+	if col.Valid {
+		ID = col.Int32
+	} else {
+		ID = 1
+	}
+	_, err = s.DB.Exec("INSERT INTO category (ctg_id,ctg_name) VALUES (?,?);", ID, ctg.Name)
+	if err != nil {
+		log.Printf("%v", err)
+		ID = -1
+		return ID
+	} else {
+		return ID
+	}
+}
+
+func (s *DBServer) DeleteCategory(ctg definition.Category) bool {
+	_, err := s.DB.Exec("DELETE FROM category WHERE ctg_id=?;", ctg.ID)
+	if err != nil {
+		log.Printf("%v", err)
+		return false
+	} else {
+		return true
+	}
+}

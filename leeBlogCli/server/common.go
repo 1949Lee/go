@@ -38,3 +38,22 @@ func (b *Blog) DeleteTag(param definition.Tag) bool {
 	}
 	return true
 }
+
+func (b *Blog) NewCategory(param definition.Category) (ctg definition.Category) {
+	ctg.ID = -1
+	ID := b.Dao.InsertCategory(param)
+	if ID == -1 {
+		return ctg
+	}
+	ctg.ID = ID
+	ctg.Name = param.Name
+	return ctg
+}
+
+func (b *Blog) DeleteCategory(param definition.Tag) bool {
+	ok := b.Dao.DeleteTag(param)
+	if !ok {
+		return false
+	}
+	return true
+}

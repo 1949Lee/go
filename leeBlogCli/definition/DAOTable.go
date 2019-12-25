@@ -2,7 +2,7 @@ package definition
 
 // MySQL数据结构体：作者
 type Author struct {
-	ID       int    `db:"author_id"`
+	ID       int32  `db:"author_id"`
 	Nickname string `db:"author_nickname"`
 	Email    string `db:"author_email"`
 	Password string `db:"author_password"`
@@ -12,21 +12,21 @@ type Author struct {
 
 // MySQL数据结构体：文章
 type Article struct {
-	ID         int    `db:"article_id"`
-	CategoryID int    `db:"article_ctg"`
+	ID         int32  `db:"article_id"`
+	CategoryID int32  `db:"article_ctg"`
 	Title      string `db:"article_title"`
 	Tags       string `db:"article_tags"`
 	TagsID     string `db:"article_tags_id"`
 	Summary    string `db:"article_summary"`
 	Content    string `db:"article_content"`
-	CreateTime int    `db:"article_createtime"`
-	UpdateTime int    `db:"article_updatetime"`
+	CreateTime int32  `db:"article_createtime"`
+	UpdateTime int32  `db:"article_updatetime"`
 }
 
 // MySQL数据结构体：文章分类（大分类，如：技术、生活等）
 type Category struct {
-	ID   int    `db:"ctg_id"`
-	Name string `db:"ctg_name"`
+	ID   int32  `json:"id" db:"ctg_id"`
+	Name string `json:"name" db:"ctg_name"`
 }
 
 // MySQL数据结构体：文章标签
