@@ -165,7 +165,7 @@ func (api *API) DeleteCategory(writer http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	result.Data = api.Server.NewCategory(param)
+	result.Data = api.Server.DeleteCategory(param)
 	b, err := json.Marshal(result)
 	if err != nil {
 		log.Printf("DeleteCategory接口返回数据，转换json失败:%v", err)

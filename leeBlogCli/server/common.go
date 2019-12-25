@@ -50,8 +50,8 @@ func (b *Blog) NewCategory(param definition.Category) (ctg definition.Category) 
 	return ctg
 }
 
-func (b *Blog) DeleteCategory(param definition.Tag) bool {
-	ok := b.Dao.DeleteTag(param)
+func (b *Blog) DeleteCategory(param definition.Category) bool {
+	ok := b.Dao.DeleteCategory(param)
 	if !ok {
 		return false
 	}
