@@ -130,7 +130,10 @@ func (s *DBServer) InsertCategory(ctg definition.Category) (ID int32) {
 }
 
 func (s *DBServer) DeleteCategory(ctg definition.Category) bool {
-	_, err := s.DB.Exec("DELETE FROM category WHERE ctg_id=?;", ctg.ID)
+	tx := s.DB.MustBegin()
+	tx.MustExec("DELETE FROM category WHERE ctg_id=?;", ctg.ID)
+	tx.MustExec("DELETE FROM tag WHERE tag_category IS NULL;")
+	err := tx.Commit()
 	if err != nil {
 		log.Printf("%v", err)
 		return false
