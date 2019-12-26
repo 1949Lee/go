@@ -2,6 +2,7 @@ package dao
 
 import (
 	"database/sql"
+	"github.com/jmoiron/sqlx"
 	"leeBlogCli/definition"
 	"log"
 	"strconv"
@@ -131,6 +132,12 @@ func (s *DBServer) InsertCategory(ctg definition.Category) (ID int32) {
 
 func (s *DBServer) DeleteCategory(ctg definition.Category) bool {
 	tx := s.DB.MustBegin()
+	defer func(tx *sqlx.Tx) {
+		err := tx.Rollback()
+		if err != sql.ErrTxDone && err != nil {
+			log.Fatalln(err)
+		}
+	}(tx)
 	tx.MustExec("DELETE FROM category WHERE ctg_id=?;", ctg.ID)
 	tx.MustExec("DELETE FROM tag WHERE tag_category IS NULL;")
 	err := tx.Commit()
