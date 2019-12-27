@@ -246,3 +246,22 @@ Commands:
 ### MySQL:database/sql默认不支持一个查询执行多条sql语句
 需要在链接数据库的时候添加参数
 帖子详情https://blog.csdn.net/raogeeg/article/details/94452405
+
+### 小技巧
+#### golang判断文件或文件夹是否存在
+使用os.Stat()函数返回的错误值进行判断:
++ 如果返回的错误为nil,说明文件或文件夹存在
++ 如果返回的错误类型使用os.IsNotExist()判断为true,说明文件或文件夹不存在
+```go
+func PathExists(path string) (bool, error) {
+	_, err := os.Stat(path)
+	if err == nil {
+		return true, nil
+	}
+	if os.IsNotExist(err) {
+		return false, nil
+	}
+	return false, err
+}
+
+```
