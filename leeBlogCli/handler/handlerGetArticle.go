@@ -14,13 +14,16 @@ func (api *API) GetArticleWithEditingInfo(writer *APIResponseWriter, r *http.Req
 	err := json.Unmarshal(body, &param)
 	if err != nil {
 		_, _ = writer.Send(definition.ResponseResult{Code: 2, Type: 4, Data: "参数获取失败"})
+		return
 	}
 	if param.ArticleID == "" {
 		_, _ = writer.Send(definition.ResponseResult{Code: 1, Type: 4, Data: "参数文章ID缺失"})
+		return
 	}
 
 	if param.FileName == "" {
 		_, _ = writer.Send(definition.ResponseResult{Code: 1, Type: 4, Data: "参数文件名缺失"})
+		return
 	}
 	result := definition.ResponseResult{
 		Type: 4,

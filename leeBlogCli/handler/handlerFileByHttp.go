@@ -110,13 +110,16 @@ func (api *API) DeleteFile(writer *APIResponseWriter, r *http.Request) {
 	err := json.Unmarshal(body, &param)
 	if err != nil {
 		_, _ = writer.Send(definition.ResponseResult{Code: 2, Type: 4, Data: "参数获取失败"})
+		return
 	}
 	if param.ArticleID == "" {
 		_, _ = writer.Send(definition.ResponseResult{Code: 1, Type: 4, Data: "参数文章ID缺失"})
+		return
 	}
 
 	if param.FileName == "" {
 		_, _ = writer.Send(definition.ResponseResult{Code: 1, Type: 4, Data: "参数文件名缺失"})
+		return
 	}
 	result := definition.ResponseResult{
 		Type: 4,
@@ -125,15 +128,17 @@ func (api *API) DeleteFile(writer *APIResponseWriter, r *http.Request) {
 	}
 	err = os.Remove(getFileName(param.ArticleID, param.FileName))
 	if err != nil {
-		b, _ := json.Marshal(definition.ResponseResult{Code: 1, Type: 4, Data: "删除失败"})
 		log.Printf("删除文件失败，error：%v ", err)
-		_, _ = writer.Send([]byte(b))
+		_, _ = writer.Send(definition.ResponseResult{Code: 1, Type: 4, Data: "删除失败"})
+		return
 	}
 	articleID, atoIErr := strconv.Atoi(param.ArticleID)
 	if atoIErr != nil {
 		log.Printf("删除文章最后一个文件后，删除文件夹时转换文章ID失败，error：%v ", atoIErr)
 		result.Code = 1
 		result.Data = "删除失败"
+		_, _ = writer.Send(result)
+		return
 	} else {
 		path := utils.GetFilePath(articleID)
 		infos, err := ioutil.ReadDir(path)
@@ -141,14 +146,17 @@ func (api *API) DeleteFile(writer *APIResponseWriter, r *http.Request) {
 			log.Printf("删除文章最后一个文件后，删除文件夹时读取文件夹失败，error：%v ", err)
 			result.Code = 1
 			result.Data = "删除失败"
-		} else {
-			if len(infos) == 0 {
-				err := os.RemoveAll(path)
-				if err != nil {
-					log.Printf("删除文章最后一个文件后，删除文件夹失败，error：%v ", err)
-					result.Code = 1
-					result.Data = "删除失败"
-				}
+			_, _ = writer.Send(result)
+			return
+		}
+		if len(infos) == 0 {
+			err := os.RemoveAll(path)
+			if err != nil {
+				log.Printf("删除文章最后一个文件后，删除文件夹失败，error：%v ", err)
+				result.Code = 1
+				result.Data = "删除失败"
+				_, _ = writer.Send(result)
+				return
 			}
 		}
 	}
