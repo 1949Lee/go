@@ -127,22 +127,45 @@ func (api *API) DeleteFile(writer http.ResponseWriter, r *http.Request) {
 		b, _ := json.Marshal(definition.ResponseResult{Code: 1, Type: 4, Data: "参数文件名缺失"})
 		writer.Write(b)
 	}
+	result := definition.ResponseResult{
+		Type: 4,
+		Code: 0,
+		Data: "删除成功",
+	}
 	err = os.Remove(getFileName(param.ArticleID, param.FileName))
 	if err != nil {
 		b, _ := json.Marshal(definition.ResponseResult{Code: 1, Type: 4, Data: "删除失败"})
 		log.Printf("删除文件失败，error：%v ", err)
 		writer.Write(b)
 	}
-
-	result := definition.ResponseResult{
-		Type: 4,
-		Code: 0,
-		Data: "删除成功",
+	articleID, atoIErr := strconv.Atoi(param.ArticleID)
+	if atoIErr != nil {
+		log.Printf("删除文章最后一个文件后，删除文件夹时转换文章ID失败，error：%v ", atoIErr)
+		result.Code = 1
+		result.Data = "删除失败"
+	} else {
+		path := utils.GetFilePath(articleID)
+		infos, err := ioutil.ReadDir(path)
+		if err != nil {
+			log.Printf("删除文章最后一个文件后，删除文件夹时读取文件夹失败，error：%v ", err)
+			result.Code = 1
+			result.Data = "删除失败"
+		} else {
+			if len(infos) == 0 {
+				err := os.RemoveAll(path)
+				if err != nil {
+					log.Printf("删除文章最后一个文件后，删除文件夹失败，error：%v ", err)
+					result.Code = 1
+					result.Data = "删除失败"
+				}
+			}
+		}
 	}
+
 	var b []byte
 	if b, err = json.Marshal(result); err != nil {
 		log.Printf("ReceivingFile Handler when json.Marshal Error:%v", err)
 	}
 
-	writer.Write([]byte(b))
+	writer.Write(b)
 }
