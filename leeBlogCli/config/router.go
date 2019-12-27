@@ -29,6 +29,9 @@ var (
 	// 接口路由 删除分类
 	DeleteCategory = Site + "delete-category"
 
+	// 接口路由 获取文章信息
+	GetArticleWithEditingInfo = Site + "get-article-and-info"
+
 	// 静态资源路由
 	FileResource = Site + "static/"
 )

@@ -25,7 +25,7 @@ func getFileName(articleID string, fileName string) string {
 }
 
 // 接收上传的文件
-func (api *API) ReceivingFile(writer http.ResponseWriter, r *http.Request) {
+func (api *API) ReceivingFile(writer *APIResponseWriter, r *http.Request) {
 	result := definition.ResponseResult{
 		Type: 4,
 		Code: 0,
@@ -94,38 +94,29 @@ func (api *API) ReceivingFile(writer http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
-	var b []byte
 
 	if len(fileres) > 0 {
 		result.Data = fileres
 	}
-	if b, err = json.Marshal(result); err != nil {
-		log.Printf("ReceivingFile Handler when json.Marshal Error:%v", err)
-		result.Code = 1
-		result.Data = "服务器保存文件失败"
-	}
 
-	writer.Write([]byte(b))
+	_, _ = writer.Send(result)
 }
 
 // 删除上传的文件
-func (api *API) DeleteFile(writer http.ResponseWriter, r *http.Request) {
+func (api *API) DeleteFile(writer *APIResponseWriter, r *http.Request) {
 	body, _ := ioutil.ReadAll(r.Body)
 	defer r.Body.Close()
 	param := definition.FileOptions{}
 	err := json.Unmarshal(body, &param)
 	if err != nil {
-		b, _ := json.Marshal(definition.ResponseResult{Code: 2, Type: 4, Data: "参数获取失败"})
-		writer.Write(b)
+		_, _ = writer.Send(definition.ResponseResult{Code: 2, Type: 4, Data: "参数获取失败"})
 	}
 	if param.ArticleID == "" {
-		b, _ := json.Marshal(definition.ResponseResult{Code: 1, Type: 4, Data: "参数文章ID缺失"})
-		writer.Write(b)
+		_, _ = writer.Send(definition.ResponseResult{Code: 1, Type: 4, Data: "参数文章ID缺失"})
 	}
 
 	if param.FileName == "" {
-		b, _ := json.Marshal(definition.ResponseResult{Code: 1, Type: 4, Data: "参数文件名缺失"})
-		writer.Write(b)
+		_, _ = writer.Send(definition.ResponseResult{Code: 1, Type: 4, Data: "参数文件名缺失"})
 	}
 	result := definition.ResponseResult{
 		Type: 4,
@@ -136,7 +127,7 @@ func (api *API) DeleteFile(writer http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		b, _ := json.Marshal(definition.ResponseResult{Code: 1, Type: 4, Data: "删除失败"})
 		log.Printf("删除文件失败，error：%v ", err)
-		writer.Write(b)
+		_, _ = writer.Send([]byte(b))
 	}
 	articleID, atoIErr := strconv.Atoi(param.ArticleID)
 	if atoIErr != nil {
@@ -162,10 +153,5 @@ func (api *API) DeleteFile(writer http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	var b []byte
-	if b, err = json.Marshal(result); err != nil {
-		log.Printf("ReceivingFile Handler when json.Marshal Error:%v", err)
-	}
-
-	writer.Write(b)
+	_, _ = writer.Send(result)
 }

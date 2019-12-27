@@ -9,7 +9,7 @@ import (
 )
 
 // 生成新的文章ID的API
-func (api *API) NewArticleID(writer http.ResponseWriter, r *http.Request) {
+func (api *API) NewArticleID(writer *APIResponseWriter, r *http.Request) {
 	result := definition.APIResult{
 		Code: 0,
 		Data: nil,
@@ -17,18 +17,11 @@ func (api *API) NewArticleID(writer http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
 	result.Data = api.Server.GenerateArticleID()
-	b, err := json.Marshal(result)
-	if err != nil {
-		log.Printf("NewArticleID接口返回数据，转换json失败:%v", err)
-		result.Code = 1
-		result.Message = "获取新ID失败"
-	}
-
-	writer.Write(b)
+	_, _ = writer.Send(result)
 }
 
 // 生成新的文章ID的API
-func (api *API) GetTagsGroupByCategory(writer http.ResponseWriter, r *http.Request) {
+func (api *API) GetTagsGroupByCategory(writer *APIResponseWriter, r *http.Request) {
 	result := definition.APIResult{
 		Code: 0,
 		Data: nil,
@@ -36,19 +29,11 @@ func (api *API) GetTagsGroupByCategory(writer http.ResponseWriter, r *http.Reque
 	defer r.Body.Close()
 
 	result.Data = api.Server.GetTagsGroupByCategory()
-	b, err := json.Marshal(result)
-	if err != nil {
-		log.Printf("GetTagsGroupByCategory接口返回数据，转换json失败:%v", err)
-		result.Code = 1
-		result.Message = "获取错误"
-		result.Data = nil
-	}
-
-	writer.Write(b)
+	_, _ = writer.Send(result)
 }
 
 // 添加新标签的API
-func (api *API) NewTag(writer http.ResponseWriter, r *http.Request) {
+func (api *API) NewTag(writer *APIResponseWriter, r *http.Request) {
 	param := definition.Tag{
 		ID: -1,
 	}
@@ -67,19 +52,11 @@ func (api *API) NewTag(writer http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
 	result.Data = api.Server.NewTag(param)
-	b, err := json.Marshal(result)
-	if err != nil {
-		log.Printf("NewTag接口返回数据，转换json失败:%v", err)
-		result.Code = 1
-		result.Message = "添加失败"
-		result.Data = nil
-	}
-
-	writer.Write(b)
+	_, _ = writer.Send(result)
 }
 
 // 删除标签的API
-func (api *API) DeleteTag(writer http.ResponseWriter, r *http.Request) {
+func (api *API) DeleteTag(writer *APIResponseWriter, r *http.Request) {
 	param := definition.Tag{
 		ID: -1,
 	}
@@ -103,19 +80,11 @@ func (api *API) DeleteTag(writer http.ResponseWriter, r *http.Request) {
 		result.Message = "删除失败"
 		result.Data = nil
 	}
-	b, err := json.Marshal(result)
-	if err != nil {
-		log.Printf("DeleteTag接口返回数据，转换json失败:%v", err)
-		result.Code = 1
-		result.Message = "删除失败"
-		result.Data = nil
-	}
-
-	writer.Write(b)
+	_, _ = writer.Send(result)
 }
 
 // 添加新分类的API
-func (api *API) NewCategory(writer http.ResponseWriter, r *http.Request) {
+func (api *API) NewCategory(writer *APIResponseWriter, r *http.Request) {
 	param := definition.Category{
 		ID: -1,
 	}
@@ -134,19 +103,11 @@ func (api *API) NewCategory(writer http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
 	result.Data = api.Server.NewCategory(param)
-	b, err := json.Marshal(result)
-	if err != nil {
-		log.Printf("NewCategory接口返回数据，转换json失败:%v", err)
-		result.Code = 1
-		result.Message = "添加失败"
-		result.Data = nil
-	}
-
-	writer.Write(b)
+	_, _ = writer.Send(result)
 }
 
 // 删除分类的API
-func (api *API) DeleteCategory(writer http.ResponseWriter, r *http.Request) {
+func (api *API) DeleteCategory(writer *APIResponseWriter, r *http.Request) {
 
 	param := definition.Category{
 		ID: -1,
@@ -166,13 +127,5 @@ func (api *API) DeleteCategory(writer http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
 	result.Data = api.Server.DeleteCategory(param)
-	b, err := json.Marshal(result)
-	if err != nil {
-		log.Printf("DeleteCategory接口返回数据，转换json失败:%v", err)
-		result.Code = 1
-		result.Message = "删除失败"
-		result.Data = nil
-	}
-
-	writer.Write(b)
+	_, _ = writer.Send(result)
 }

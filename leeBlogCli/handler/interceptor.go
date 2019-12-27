@@ -1,14 +1,36 @@
 package handler
 
 import (
+	"encoding/json"
 	"log"
 	"net/http"
 )
 
+type APIResponseWriter struct {
+	writer http.ResponseWriter
+}
+
+func (a *APIResponseWriter) Send(result interface{}) (int, error) {
+	var (
+		b   []byte
+		err error
+	)
+	if b, err = json.Marshal(result); err != nil {
+		log.Printf("Send API result when json.Marshal Error:%v", err)
+	}
+
+	return a.writer.Write(b)
+}
+
+func (a *APIResponseWriter) Write(b []byte) (int, error) {
+	return a.writer.Write(b)
+}
+
 type HttpHandler func(http.ResponseWriter, *http.Request)
+type APIHandler func(*APIResponseWriter, *http.Request)
 
 // Http拦截器
-func (api *API) HttpInterceptor(handler HttpHandler, header map[string]string) HttpHandler {
+func (api *API) HttpInterceptor(handler APIHandler, header map[string]string) HttpHandler {
 	return func(writer http.ResponseWriter, r *http.Request) {
 		defer func() {
 			if err := recover(); err != nil {
@@ -26,12 +48,15 @@ func (api *API) HttpInterceptor(handler HttpHandler, header map[string]string) H
 		}
 		//下面是接口真正的处理
 		writer.Header().Add("Access-Control-Allow-Credentials", "true")
-		handler(writer, r)
+		apiWriter := APIResponseWriter{
+			writer: writer,
+		}
+		handler(&apiWriter, r)
 	}
 }
 
 // 普通接口拦截
-func (api *API) APIInterceptor(handler HttpHandler) HttpHandler {
+func (api *API) APIInterceptor(handler APIHandler) HttpHandler {
 	return api.HttpInterceptor(handler, map[string]string{
 		"Access-Control-Allow-Methods": "POST, OPTIONS",
 		"Access-Control-Allow-Headers": "POST, Content-Type",
@@ -39,7 +64,7 @@ func (api *API) APIInterceptor(handler HttpHandler) HttpHandler {
 }
 
 // 资源拦截
-func (api *API) ResourceInterceptor(handler HttpHandler) HttpHandler {
+func (api *API) ResourceInterceptor(handler APIHandler) HttpHandler {
 	// 需要加严格的验证。
 	return api.HttpInterceptor(handler, map[string]string{
 		"Access-Control-Allow-Methods": "GET",
