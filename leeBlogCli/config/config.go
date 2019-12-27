@@ -9,5 +9,9 @@ var (
 	// 服务开启的端口号
 	ServerPort string = "1314"
 
+	// 文章所用静态资源（图片等）的存放目录
 	FilePath string = "article-file/"
+
+	// 文章编辑后保存的草稿
+	DraftPath string = "editing-draft/"
 )
