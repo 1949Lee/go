@@ -54,6 +54,7 @@ func (api *API) GetArticleWithEditingInfo(writer *APIResponseWriter, r *http.Req
 		_, _ = writer.Send(result)
 		return
 	}
+	resData := definition.EditingArticleInfo{}
 
 	// 无论是未发布还是发布的文章，都首先获取草稿。
 	filePath := GetDraftFilePath(int(param.ArticleID))
@@ -84,5 +85,6 @@ func (api *API) GetArticleWithEditingInfo(writer *APIResponseWriter, r *http.Req
 	} else if param.Type == definition.GetArticleParamTypeEnum.DraftArticle { // 未发布的文章的处理：
 
 	}
+	result.Data = resData
 	_, _ = writer.Send(result)
 }
