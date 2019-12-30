@@ -53,7 +53,6 @@ type ArticleHeader struct {
 
 // 新增或跟新时传入的参数
 type SaveArticleInfo struct {
-
 	// 文章的类型，
 	Type GetArticleParamArticleType `json:"type"`
 
@@ -62,4 +61,7 @@ type SaveArticleInfo struct {
 
 	// 文章信息
 	ArticleHeader ArticleHeader `json:"info"`
+
+	// 文章内容转换为html的串。
+	Text string `json:"text"`
 }

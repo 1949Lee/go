@@ -14,4 +14,7 @@ var (
 
 	// 文章编辑后保存的草稿
 	DraftPath string = "editing-draft/"
+
+	// 文章摘要的长度
+	SummaryLength int = 100
 )

@@ -22,6 +22,14 @@ func (api *API) SaveArticle(writer *APIResponseWriter, r *http.Request) {
 		_, _ = writer.Send(definition.ResponseResult{Code: 1, Type: 5, Data: "参数文章类型缺失"})
 		return
 	}
+	if param.Content == "" {
+		_, _ = writer.Send(definition.ResponseResult{Code: 1, Type: 4, Data: "参数文章markdown字符串缺失"})
+		return
+	}
+	if param.Text == "" {
+		_, _ = writer.Send(definition.ResponseResult{Code: 1, Type: 4, Data: "参数文章text缺失"})
+		return
+	}
 	if param.ArticleHeader.ID == 0 {
 		_, _ = writer.Send(definition.ResponseResult{Code: 1, Type: 4, Data: "参数文章ID缺失"})
 		return
