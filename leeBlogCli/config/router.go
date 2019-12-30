@@ -32,6 +32,9 @@ var (
 	// 接口路由 获取文章信息
 	GetArticleWithEditingInfo = Site + "get-article-and-info"
 
+	// 接口路由 新增或更新文章信息
+	SaveArticle = Site + "save-article"
+
 	// 静态资源路由
 	FileResource = Site + "static/"
 )

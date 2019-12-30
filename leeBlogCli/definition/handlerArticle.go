@@ -50,3 +50,16 @@ type ArticleHeader struct {
 	// 文章标签
 	Tags []Tag `json:"tags"`
 }
+
+// 新增或跟新时传入的参数
+type SaveArticleInfo struct {
+
+	// 文章的类型，
+	Type GetArticleParamArticleType `json:"type"`
+
+	// 文章的markdown内容
+	Content string `json:"content"`
+
+	// 文章信息
+	ArticleHeader ArticleHeader `json:"info"`
+}

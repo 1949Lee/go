@@ -39,7 +39,7 @@ func (api *API) GetArticleWithEditingInfo(writer *APIResponseWriter, r *http.Req
 	}
 
 	if param.Type == 0 {
-		_, _ = writer.Send(definition.ResponseResult{Code: 1, Type: 4, Data: "参数文件名缺失"})
+		_, _ = writer.Send(definition.ResponseResult{Code: 1, Type: 4, Data: "参数文章状态缺失"})
 		return
 	}
 	result := definition.ResponseResult{
@@ -75,16 +75,27 @@ func (api *API) GetArticleWithEditingInfo(writer *APIResponseWriter, r *http.Req
 	if param.Type == definition.GetArticleParamTypeEnum.PublicArticle {
 
 		// 查询数据库获取文章信息
-		api.Server.GetArticleInfo(&param)
+		article := api.Server.GetArticleHeader(&param)
+		resData.Markdown = article.Content
+		//resData.ArticleHeader.ID = article.ID
+		//resData.ArticleHeader.CreateTime = article.CreateTime
+		//resData.ArticleHeader.Title = article.Title
+		//resData.ArticleHeader.Category = definition.Category{
+		//    ID:article.CategoryID,
+		//}
+		if article.ID == 0 {
+			result.Data = nil
+		} else {
+			result.Data = article
+		}
 
 		// 存在草稿，则使用草稿作为文章的markdown。否则需要到查询数据库的数据用做markdown。
 		if len(draft) > 0 {
 
-		} else { // 查询数据库的数据用做markdown
 		}
 	} else if param.Type == definition.GetArticleParamTypeEnum.DraftArticle { // 未发布的文章的处理：
 
 	}
-	result.Data = resData
+	//result.Data = resData
 	_, _ = writer.Send(result)
 }

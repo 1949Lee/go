@@ -17,6 +17,7 @@ func main() {
 	http.HandleFunc(config.DeleteFile, lee.API.APIInterceptor(lee.API.DeleteFile))
 	http.HandleFunc(config.NewArticleID, lee.API.APIInterceptor(lee.API.NewArticleID))
 	http.HandleFunc(config.GetArticleWithEditingInfo, lee.API.APIInterceptor(lee.API.GetArticleWithEditingInfo))
+	http.HandleFunc(config.SaveArticle, lee.API.APIInterceptor(lee.API.SaveArticle))
 	http.HandleFunc(config.TagsGroupByCategory, lee.API.APIInterceptor(lee.API.GetTagsGroupByCategory))
 	http.HandleFunc(config.NewTag, lee.API.APIInterceptor(lee.API.NewTag))
 	http.HandleFunc(config.DeleteTag, lee.API.APIInterceptor(lee.API.DeleteTag))

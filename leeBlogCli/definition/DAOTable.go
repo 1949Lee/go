@@ -15,12 +15,11 @@ type Article struct {
 	ID         int32  `db:"article_id"`
 	CategoryID int32  `db:"article_ctg"`
 	Title      string `db:"article_title"`
-	Tags       string `db:"article_tags"`
-	TagsID     string `db:"article_tags_id"`
+	AuthorID   int32  `db:"article_author"`
 	Summary    string `db:"article_summary"`
 	Content    string `db:"article_content"`
-	CreateTime int32  `db:"article_createtime"`
-	UpdateTime int32  `db:"article_updatetime"`
+	CreateTime string `db:"article_createtime"`
+	UpdateTime string `db:"article_updatetime"`
 }
 
 // MySQL数据结构体：文章分类（大分类，如：技术、生活等）

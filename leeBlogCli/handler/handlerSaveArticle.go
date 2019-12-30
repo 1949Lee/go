@@ -2,67 +2,53 @@ package handler
 
 import (
 	"encoding/json"
+	"io/ioutil"
 	"leeBlogCli/definition"
-	"log"
 	"net/http"
 )
 
-// 保存或更新文章
-func (api *API) SaveArticle(writer http.ResponseWriter, r *http.Request) {
+// 新增或更新文章
+func (api *API) SaveArticle(writer *APIResponseWriter, r *http.Request) {
+	body, _ := ioutil.ReadAll(r.Body)
+	defer r.Body.Close()
+	param := definition.SaveArticleInfo{}
+	err := json.Unmarshal(body, &param)
+	if err != nil {
+		_, _ = writer.Send(definition.ResponseResult{Code: 1, Type: 5, Data: "参数获取失败"})
+		return
+	}
+
+	if param.Type == 0 {
+		_, _ = writer.Send(definition.ResponseResult{Code: 1, Type: 5, Data: "参数文章类型缺失"})
+		return
+	}
+	if param.ArticleHeader.ID == 0 {
+		_, _ = writer.Send(definition.ResponseResult{Code: 1, Type: 4, Data: "参数文章ID缺失"})
+		return
+	}
+	if param.ArticleHeader.Category == (definition.Category{}) {
+		_, _ = writer.Send(definition.ResponseResult{Code: 1, Type: 4, Data: "参数文章所属分类缺失"})
+		return
+	}
+	if len(param.ArticleHeader.Tags) == 0 {
+		_, _ = writer.Send(definition.ResponseResult{Code: 1, Type: 4, Data: "参数文章所属标签缺失"})
+		return
+	}
+	if param.ArticleHeader.Title == "" {
+		_, _ = writer.Send(definition.ResponseResult{Code: 1, Type: 4, Data: "参数文章标题缺失"})
+		return
+	}
 	result := definition.ResponseResult{
 		Type: 4,
 		Code: 0,
-		Data: "接收成功",
-	}
-	err := r.ParseMultipartForm(64 << 10)
-	defer r.Body.Close()
-	if err != nil {
-		log.Printf("ReceivingFile Handler when ParseMultipartForm Error:%v", err)
-		result.Code = 1
-		result.Data = "上传失败"
-	}
-	param := definition.FileOptions{}
-	param.ArticleID = r.FormValue("articleID")
-	if param.ArticleID == "" {
-		log.Printf("上传文件接口获取参数错误，缺少文章ID")
-		result.Code = 1
-		result.Data = "参数文章ID缺失"
-	}
-	//for _, v := range r.MultipartForm.File {
-	//	for i := 0; i < len(v); i++ {
-	//		file, err := v[i].Open()
-	//		if err != nil {
-	//			log.Printf("ReceivingFile Handler when FormFile Error:%v", err)
-	//			result.Code = 1
-	//			result.Data = "上传文件打开失败"
-	//		}
-	//		buffer := bufio.NewReader(file)
-	//		if err := os.MkdirAll(GetFilePath(param.ArticleID), os.ModePerm); err != nil {
-	//			log.Printf("ReceivingFile Handler when os.MkdirAll Error:%v", err)
-	//			result.Code = 1
-	//			result.Data = "服务器保存文件失败"
-	//		}
-	//		f, err := os.Create(getFileName(param.ArticleID, v[i].Filename))
-	//		if err != nil {
-	//			log.Printf("ReceivingFile Handler when os.Create Error:%v", err)
-	//			result.Code = 1
-	//			result.Data = "服务器保存文件失败"
-	//		}
-	//		_, err = buffer.WriteTo(f)
-	//		if err != nil {
-	//			log.Printf("ReceivingFile Handler when buffer.WriteTo Error:%v", err)
-	//			result.Code = 1
-	//			result.Data = "服务器保存文件失败"
-	//		}
-	//		_ = file.Close()
-	//	}
-	//}
-	var b []byte
-	if b, err = json.Marshal(result); err != nil {
-		log.Printf("ReceivingFile Handler when json.Marshal Error:%v", err)
-		result.Code = 1
-		result.Data = "服务器保存文件失败"
+		Data: "成功",
 	}
 
-	writer.Write([]byte(b))
+	ok := api.Server.SaveArticle(&param)
+	if !ok {
+		_, _ = writer.Send(definition.ResponseResult{Code: 1, Type: 5, Data: "发布失败"})
+		return
+	}
+
+	_, _ = writer.Send(result)
 }
