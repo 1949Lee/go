@@ -23,3 +23,8 @@ func (b *Blog) SaveArticle(param *definition.SaveArticleInfo) bool {
 func (b *Blog) GetArticle(param *definition.GetArticleParam) definition.Article {
 	return b.Dao.GetArticle(param.ArticleID)
 }
+
+// 根据传入的查询条件（分页、关键字、分类、标签等）从数据库查询文章列表
+func (b *Blog) ArticleList(param *definition.ArticleListParam) bool {
+	return true
+}

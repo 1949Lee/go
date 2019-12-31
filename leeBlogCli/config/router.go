@@ -35,6 +35,9 @@ var (
 	// 接口路由 新增或更新文章信息
 	SaveArticle = Site + "save-article"
 
+	// 接口路由 新增或更新文章信息
+	ArticleList = Site + "article-list"
+
 	// 静态资源路由
 	FileResource = Site + "static/"
 )

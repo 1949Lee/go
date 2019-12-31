@@ -65,3 +65,43 @@ type SaveArticleInfo struct {
 	// 文章内容转换为html的串。
 	Text string `json:"text"`
 }
+
+// 文章列表接口的参数
+type ArticleListParam struct {
+	// 页大小
+	PageSize int
+
+	// 页码
+	PageIndex int
+
+	// 类别ID
+	CategoryID int32
+
+	// 标签ID
+	TagIDs string
+
+	// 文章标题
+	Title string
+}
+
+// 文章列表的一项
+type ArticleListResultItem struct {
+
+	// 文章
+	Article Article `json:"article"`
+
+	// 文章类别
+	Category Category `json:"category"`
+
+	// 文章标签
+	Tags []Tag `json:"tags"`
+}
+
+// 文章列表的一项
+type ArticleListResult struct {
+	// 文章列表
+	List []ArticleListResultItem `json:"list"`
+
+	// 是否是最后一页
+	IsLastPage bool `json:"isLastPage"`
+}

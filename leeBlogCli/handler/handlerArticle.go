@@ -153,3 +153,38 @@ func (api *API) GetArticleWithEditingInfo(writer *APIResponseWriter, r *http.Req
 	//result.Data = resData
 	_, _ = writer.Send(result)
 }
+
+func (api *API) ArticleList(writer *APIResponseWriter, r *http.Request) {
+	body, _ := ioutil.ReadAll(r.Body)
+	defer r.Body.Close()
+
+	param := definition.ArticleListParam{}
+	err := json.Unmarshal(body, &param)
+	if err != nil {
+		_, _ = writer.Send(definition.ResponseResult{Code: 1, Type: 5, Data: "参数获取失败"})
+		return
+	}
+
+	if param.PageSize == 0 {
+		param.PageSize = config.IndexArticleListPageSize
+		//_, _ = writer.Send(definition.ResponseResult{Code: 1, Type: 5, Data: "参数文章类型缺失"})
+		//return
+	}
+
+	result := definition.ResponseResult{
+		Type: 4,
+		Code: 0,
+		Data: "成功",
+	}
+	list := definition.ArticleListResult{}
+
+	result.Data = list
+
+	ok := api.Server.ArticleList(&param)
+	if !ok {
+		_, _ = writer.Send(definition.ResponseResult{Code: 1, Type: 5, Data: "发布失败"})
+		return
+	}
+
+	_, _ = writer.Send(result)
+}

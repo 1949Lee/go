@@ -17,4 +17,7 @@ var (
 
 	// 文章摘要的长度
 	SummaryLength int = 100
+
+	// 首页文章列表接口的页大小的默认值
+	IndexArticleListPageSize int = 6
 )
