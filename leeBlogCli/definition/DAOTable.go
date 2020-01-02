@@ -12,14 +12,14 @@ type Author struct {
 
 // MySQL数据结构体：文章
 type Article struct {
-	ID         int32  `db:"article_id"`
-	CategoryID int32  `db:"article_ctg"`
-	Title      string `db:"article_title"`
-	AuthorID   int32  `db:"article_author"`
-	Summary    string `db:"article_summary"`
-	Content    string `db:"article_content"`
-	CreateTime string `db:"article_createtime"`
-	UpdateTime string `db:"article_updatetime"`
+	ID         int32  `json:"id" db:"article_id"`
+	CategoryID int32  `json:"categoryID" db:"article_ctg"`
+	Title      string `json:"title" db:"article_title"`
+	AuthorID   int32  `json:"authorID" db:"article_author"`
+	Summary    string `json:"summary" db:"article_summary"`
+	Content    string `json:"content" db:"article_content"`
+	CreateTime string `json:"createTime" db:"article_createtime"`
+	UpdateTime string `json:"updateTime" db:"article_updatetime"`
 }
 
 // MySQL数据结构体：文章分类（大分类，如：技术、生活等）

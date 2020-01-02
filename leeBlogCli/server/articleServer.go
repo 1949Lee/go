@@ -25,6 +25,6 @@ func (b *Blog) GetArticle(param *definition.GetArticleParam) definition.Article 
 }
 
 // 根据传入的查询条件（分页、关键字、分类、标签等）从数据库查询文章列表
-func (b *Blog) ArticleList(param *definition.ArticleListParam) bool {
-	return true
+func (b *Blog) ArticleList(param *definition.ArticleListParam) definition.ArticleListResult {
+	return b.Dao.GetArticleList(param)
 }

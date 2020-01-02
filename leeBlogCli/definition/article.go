@@ -69,32 +69,33 @@ type SaveArticleInfo struct {
 // 文章列表接口的参数
 type ArticleListParam struct {
 	// 页大小
-	PageSize int
+	PageSize int `json:"pageSize"`
 
 	// 页码
-	PageIndex int
+	PageIndex int `json:"pageIndex"`
 
 	// 类别ID
-	CategoryID int32
+	CategoryID int32 `json:"categoryID"`
 
 	// 标签ID
-	TagIDs string
+	TagIDs string `json:"tagIDs"`
 
 	// 文章标题
-	Title string
+	Title string `json:"title"`
 }
 
 // 文章列表的一项
 type ArticleListResultItem struct {
 
 	// 文章
-	Article Article `json:"article"`
+	Article
 
 	// 文章类别
-	Category Category `json:"category"`
+	CategoryName string `json:"categoryName" db:"ctg_name"`
 
 	// 文章标签
 	Tags []Tag `json:"tags"`
+	//Tag
 }
 
 // 文章列表的一项

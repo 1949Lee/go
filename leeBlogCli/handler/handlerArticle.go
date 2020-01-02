@@ -165,10 +165,14 @@ func (api *API) ArticleList(writer *APIResponseWriter, r *http.Request) {
 		return
 	}
 
+	// 默认也大小
 	if param.PageSize == 0 {
 		param.PageSize = config.IndexArticleListPageSize
-		//_, _ = writer.Send(definition.ResponseResult{Code: 1, Type: 5, Data: "参数文章类型缺失"})
-		//return
+	}
+
+	// 默认页码为1
+	if param.PageIndex == 0 {
+		param.PageIndex = 1
 	}
 
 	result := definition.ResponseResult{
@@ -176,15 +180,14 @@ func (api *API) ArticleList(writer *APIResponseWriter, r *http.Request) {
 		Code: 0,
 		Data: "成功",
 	}
-	list := definition.ArticleListResult{}
+	//list := definition.ArticleListResult{}
 
+	list := api.Server.ArticleList(&param)
 	result.Data = list
-
-	ok := api.Server.ArticleList(&param)
-	if !ok {
-		_, _ = writer.Send(definition.ResponseResult{Code: 1, Type: 5, Data: "发布失败"})
-		return
-	}
+	//if !ok {
+	//	_, _ = writer.Send(definition.ResponseResult{Code: 1, Type: 5, Data: "发布失败"})
+	//	return
+	//}
 
 	_, _ = writer.Send(result)
 }

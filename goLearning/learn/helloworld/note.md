@@ -1,3 +1,5 @@
+### 语法基础文章
+https://blog.csdn.net/uudou/category_6360097.html
 ### 变量定义
 见 main.go
 变量常量的标识符慎用大小写，因为表示不同的含义。大写开头表示public类型

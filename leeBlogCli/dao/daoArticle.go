@@ -4,6 +4,7 @@ import (
 	"leeBlogCli/config"
 	"leeBlogCli/definition"
 	"log"
+	"strconv"
 	"strings"
 )
 
@@ -85,4 +86,84 @@ func (s *DBServer) InsertArticle(param *definition.SaveArticleInfo) bool {
 func (s *DBServer) UpdateArticle(param *definition.SaveArticleInfo) bool {
 	//if
 	return true
+}
+
+func (s *DBServer) GetArticleList(param *definition.ArticleListParam) definition.ArticleListResult {
+	sqlBuilder := strings.Builder{}
+	sqlBuilder.WriteString(`SELECT * FROM (SELECT
+	( @rownum := @rownum + 1 ) AS i,
+	a.article_id,
+	a.article_ctg,
+	a.article_title,
+	a.article_summary,
+	a.article_createtime,
+	a.article_updatetime,
+	c.ctg_name
+FROM
+	article a
+	LEFT JOIN category c ON a.article_ctg = c.ctg_id
+	LEFT JOIN articles_tags_relation r ON r.relation_article = a.article_id,
+	(SELECT @rownum := -1 as i) d `)
+	if !(param.CategoryID == 0 && param.Title == "" && param.TagIDs == "") {
+		condition := strings.Builder{}
+		conditions := make([]string, 0)
+		if param.CategoryID != 0 {
+			condition.WriteString("c.ctg_id = ")
+			condition.WriteString(strconv.Itoa(int(param.CategoryID)))
+			conditions = append(conditions, condition.String())
+			condition.Reset()
+		}
+		if param.Title != "" {
+			condition.WriteString("a.article_title LIKE '%")
+			condition.WriteString(param.Title)
+			condition.WriteString("%'")
+			conditions = append(conditions, condition.String())
+			condition.Reset()
+		}
+		if param.TagIDs != "" {
+			condition.WriteString("r.relation_tag IN (")
+			condition.WriteString(param.TagIDs)
+			condition.WriteString(")")
+			conditions = append(conditions, condition.String())
+			condition.Reset()
+		}
+		sqlBuilder.WriteByte('\n')
+		sqlBuilder.WriteString("WHERE ")
+		sqlBuilder.WriteString(strings.Join(conditions, " AND "))
+	}
+	sqlBuilder.WriteString(`
+GROUP BY
+	a.article_id
+ORDER BY
+	a.article_updatetime DESC) as a  WHERE a.i >=? AND a.i<?;`)
+	rows, err := s.DB.Queryx(sqlBuilder.String(), (param.PageIndex-1)*param.PageSize, param.PageIndex*param.PageSize)
+	if err != nil {
+		log.Printf("dao.GetArticleList sql报错 error：%v", err)
+	}
+	defer rows.Close()
+	list := definition.ArticleListResult{
+		List:       []definition.ArticleListResultItem{},
+		IsLastPage: true,
+	}
+	for rows.Next() {
+		tem := definition.ArticleListResultItem{
+			//Tags:[]definition.Tag{},
+		}
+		rowNo := 0
+		err := rows.Scan(
+			&rowNo,
+			&tem.ID,
+			&tem.CategoryID,
+			&tem.Title,
+			&tem.Summary,
+			&tem.CreateTime,
+			&tem.UpdateTime,
+			&tem.CategoryName)
+		if err != nil {
+			log.Printf("dao.GetArticleList 遍历SQL结果集报错 error：%v", err)
+		}
+		list.List = append(list.List, tem)
+
+	}
+	return list
 }
