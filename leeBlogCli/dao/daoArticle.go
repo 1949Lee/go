@@ -98,11 +98,14 @@ func (s *DBServer) GetArticleList(param *definition.ArticleListParam) definition
 	a.article_summary,
 	a.article_createtime,
 	a.article_updatetime,
-	c.ctg_name
+	c.ctg_name,
+	GROUP_CONCAT(t.tag_id ORDER BY t.tag_id) AS tag_ids,
+	GROUP_CONCAT(t.tag_name ORDER BY t.tag_id) AS tag_names
 FROM
 	article a
 	LEFT JOIN category c ON a.article_ctg = c.ctg_id
-	LEFT JOIN articles_tags_relation r ON r.relation_article = a.article_id,
+	LEFT JOIN articles_tags_relation r ON r.relation_article = a.article_id
+	LEFT JOIN tag t ON r.relation_tag = t.tag_id,
 	(SELECT @rownum := -1 as i) d `)
 	if !(param.CategoryID == 0 && param.Title == "" && param.TagIDs == "") {
 		condition := strings.Builder{}
@@ -147,9 +150,11 @@ ORDER BY
 	}
 	for rows.Next() {
 		tem := definition.ArticleListResultItem{
-			//Tags:[]definition.Tag{},
+			Tags: []definition.Tag{},
 		}
 		rowNo := 0
+		tagIDs := ""
+		tagNames := ""
 		err := rows.Scan(
 			&rowNo,
 			&tem.ID,
@@ -158,10 +163,28 @@ ORDER BY
 			&tem.Summary,
 			&tem.CreateTime,
 			&tem.UpdateTime,
-			&tem.CategoryName)
+			&tem.CategoryName,
+			&tagIDs,
+			&tagNames)
 		if err != nil {
 			log.Printf("dao.GetArticleList 遍历SQL结果集报错 error：%v", err)
 		}
+		sliceTagIDs := strings.Split(tagIDs, ",")
+		sliceTagNames := strings.Split(tagNames, ",")
+		for i := 0; i < len(sliceTagIDs); i++ {
+			temTag := definition.Tag{}
+			tagID, err := strconv.Atoi(sliceTagIDs[i])
+			if err != nil {
+				log.Printf("dao.GetArticleList 遍历SQL结果集时转换tag_id报错 error：%v", err)
+				continue
+			}
+			temTag.ID = int32(tagID)
+			temTag.Name = sliceTagNames[i]
+			temTag.CategoryID = tem.CategoryID
+			tem.Tags = append(tem.Tags, temTag)
+
+		}
+
 		list.List = append(list.List, tem)
 
 	}
