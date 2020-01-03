@@ -78,6 +78,7 @@ func GetDraftFilePath(articleID int) string {
 	return builder.String()
 }
 
+// 编辑文章时获取文章相关信息
 func (api *API) GetArticleWithEditingInfo(writer *APIResponseWriter, r *http.Request) {
 	body, _ := ioutil.ReadAll(r.Body)
 	defer r.Body.Close()
@@ -154,6 +155,7 @@ func (api *API) GetArticleWithEditingInfo(writer *APIResponseWriter, r *http.Req
 	_, _ = writer.Send(result)
 }
 
+// 文章列表
 func (api *API) ArticleList(writer *APIResponseWriter, r *http.Request) {
 	body, _ := ioutil.ReadAll(r.Body)
 	defer r.Body.Close()
@@ -180,10 +182,40 @@ func (api *API) ArticleList(writer *APIResponseWriter, r *http.Request) {
 		Code: 0,
 		Data: "成功",
 	}
-	//list := definition.ArticleListResult{}
 
 	list := api.Server.ArticleList(&param)
 	result.Data = list
+
+	_, _ = writer.Send(result)
+}
+
+// 展示文章
+func (api *API) ShowArticle(writer *APIResponseWriter, r *http.Request) {
+	body, _ := ioutil.ReadAll(r.Body)
+	defer r.Body.Close()
+
+	param := definition.ShowArticleParam{}
+	err := json.Unmarshal(body, &param)
+	if err != nil {
+		_, _ = writer.Send(definition.ResponseResult{Code: 1, Type: 5, Data: "参数获取失败"})
+		return
+	}
+
+	// 默认也大小
+	if param.ID == 0 {
+		_, _ = writer.Send(definition.ResponseResult{Code: 1, Type: 5, Data: "文章ID获取失败"})
+		return
+	}
+
+	result := definition.ResponseResult{
+		Type: 4,
+		Code: 0,
+		Data: "成功",
+	}
+	//list := definition.ArticleListResult{}
+
+	data := api.Server.ShowArticle(&param)
+	result.Data = data
 	//if !ok {
 	//	_, _ = writer.Send(definition.ResponseResult{Code: 1, Type: 5, Data: "发布失败"})
 	//	return

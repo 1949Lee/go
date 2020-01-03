@@ -1,5 +1,7 @@
 package definition
 
+import "leeBlogCli/parser"
+
 type GetArticleParamArticleType int
 
 type getArticleParamTypeEnum struct {
@@ -105,4 +107,16 @@ type ArticleListResult struct {
 
 	// 是否是最后一页
 	IsLastPage bool `json:"isLastPage"`
+}
+
+// 展示文章入参
+type ShowArticleParam struct {
+	ID int32 `json:"id"`
+}
+
+// 展示文章入参
+type ShowArticleResult struct {
+	List []parser.TokenSlice `json:"list"`
+	Text string              `json:"text"`
+	Html string              `json:"html"`
 }

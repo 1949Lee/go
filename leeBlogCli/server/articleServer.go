@@ -2,6 +2,7 @@ package server
 
 import (
 	"leeBlogCli/definition"
+	"leeBlogCli/parser"
 )
 
 // 从数据库查询文章信息
@@ -27,4 +28,18 @@ func (b *Blog) GetArticle(param *definition.GetArticleParam) definition.Article 
 // 根据传入的查询条件（分页、关键字、分类、标签等）从数据库查询文章列表
 func (b *Blog) ArticleList(param *definition.ArticleListParam) definition.ArticleListResult {
 	return b.Dao.GetArticleList(param)
+}
+
+// 根据传入的文章id从数据库获取文章内容，然后经过parser的转换后，转换成HTMl的串。
+func (b *Blog) ShowArticle(param *definition.ShowArticleParam) definition.ShowArticleResult {
+	article := b.Dao.GetArticle(param.ID)
+	return MarkdownParse(article.Content)
+}
+
+func MarkdownParse(p string) definition.ShowArticleResult {
+	dataList, _ := parser.MarkdownParse(p)
+	return definition.ShowArticleResult{
+		Text: p,
+		List: dataList,
+	}
 }

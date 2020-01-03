@@ -38,6 +38,9 @@ var (
 	// 接口路由 新增或更新文章信息
 	ArticleList = Site + "article-list"
 
+	// 接口路由 展示文章
+	ShowArticle = Site + "show-article"
+
 	// 静态资源路由
 	FileResource = Site + "static/"
 )
