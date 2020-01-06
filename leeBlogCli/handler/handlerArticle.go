@@ -212,7 +212,6 @@ func (api *API) ShowArticle(writer *APIResponseWriter, r *http.Request) {
 		Code: 0,
 		Data: "成功",
 	}
-	//list := definition.ArticleListResult{}
 
 	data := api.Server.ShowArticle(&param)
 	if data.List == nil {
