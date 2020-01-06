@@ -88,6 +88,7 @@ func (s *DBServer) UpdateArticle(param *definition.SaveArticleInfo) bool {
 	return true
 }
 
+// 查询文章列表
 func (s *DBServer) GetArticleList(param *definition.ArticleListParam) definition.ArticleListResult {
 	sqlBuilder := strings.Builder{}
 	sqlBuilder.WriteString(`SELECT * FROM (SELECT
@@ -189,4 +190,55 @@ ORDER BY
 
 	}
 	return list
+}
+
+// 根据文章ID查询文章类别及所有标签
+func (s *DBServer) GetArticleCategoryAndTags(id int32) (definition.Category, []definition.Tag) {
+	tags := make([]definition.Tag, 0)
+	category := definition.Category{}
+	sqlStr := strings.Builder{}
+	// 查询类别sql拼接
+	sqlStr.WriteString(`SELECT
+	c.*
+FROM
+	article a
+	LEFT JOIN category c ON a.article_ctg = c.ctg_id
+WHERE a.article_id=`)
+	sqlStr.WriteString(strconv.Itoa(int(id)))
+	sqlStr.WriteString(`;`)
+
+	// 查询文章的所有标签的sql拼接
+	sqlStr.WriteString(`SELECT
+	t.*
+FROM
+	article a
+	LEFT JOIN articles_tags_relation r ON r.relation_article = a.article_id
+	LEFT JOIN tag t ON r.relation_tag = t.tag_id
+WHERE a.article_id=`)
+	sqlStr.WriteString(strconv.Itoa(int(id)))
+	sqlStr.WriteString(`;`)
+	rows, err := s.DB.Queryx(sqlStr.String())
+	if err != nil {
+		log.Printf("dao.GetArticleCategory 报错errror:%v", err)
+		return category, tags
+	}
+	defer rows.Close()
+	for rows.Next() {
+		err := rows.StructScan(&category)
+		if err != nil {
+			log.Printf("%v", err)
+		}
+	}
+	ok := rows.NextResultSet()
+	if ok {
+		for rows.Next() {
+			tag := definition.Tag{}
+			err := rows.Scan(&tag.ID, &tag.CategoryID, &tag.Name)
+			if err != nil {
+				log.Printf("%v", err)
+			}
+			tags = append(tags, tag)
+		}
+	}
+	return category, tags
 }

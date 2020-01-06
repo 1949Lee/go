@@ -215,11 +215,11 @@ func (api *API) ShowArticle(writer *APIResponseWriter, r *http.Request) {
 	//list := definition.ArticleListResult{}
 
 	data := api.Server.ShowArticle(&param)
+	if data.List == nil {
+		_, _ = writer.Send(definition.ResponseResult{Code: 1, Type: 5, Data: "文章不存在"})
+		return
+	}
 	result.Data = data
-	//if !ok {
-	//	_, _ = writer.Send(definition.ResponseResult{Code: 1, Type: 5, Data: "发布失败"})
-	//	return
-	//}
 
 	_, _ = writer.Send(result)
 }

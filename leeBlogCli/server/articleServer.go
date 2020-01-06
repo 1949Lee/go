@@ -33,7 +33,18 @@ func (b *Blog) ArticleList(param *definition.ArticleListParam) definition.Articl
 // 根据传入的文章id从数据库获取文章内容，然后经过parser的转换后，转换成HTMl的串。
 func (b *Blog) ShowArticle(param *definition.ShowArticleParam) definition.ShowArticleResult {
 	article := b.Dao.GetArticle(param.ID)
-	return MarkdownParse(article.Content)
+	if article.ID == 0 {
+		return definition.ShowArticleResult{}
+	}
+	category, tags := b.Dao.GetArticleCategoryAndTags(param.ID)
+	result := MarkdownParse(article.Content)
+	result.Article = definition.ArticleListResultItem{
+		Article:      article,
+		CategoryName: category.Name,
+		Tags:         tags,
+	}
+	result.Article.Content = ""
+	return result
 }
 
 func MarkdownParse(p string) definition.ShowArticleResult {

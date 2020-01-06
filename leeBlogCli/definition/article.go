@@ -88,7 +88,6 @@ type ArticleListParam struct {
 
 // 文章列表的一项
 type ArticleListResultItem struct {
-
 	// 文章
 	Article
 
@@ -116,7 +115,8 @@ type ShowArticleParam struct {
 
 // 展示文章入参
 type ShowArticleResult struct {
-	List []parser.TokenSlice `json:"list"`
-	Text string              `json:"text"`
-	Html string              `json:"html"`
+	List    []parser.TokenSlice   `json:"list"`
+	Text    string                `json:"text"`
+	Html    string                `json:"html"`
+	Article ArticleListResultItem `json:"article"`
 }

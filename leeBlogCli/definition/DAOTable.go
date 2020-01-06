@@ -33,9 +33,9 @@ type Tag struct {
 	// 标签ID
 	ID int32 `json:"id" db:"tag_id"`
 
-	// 标签名称
-	Name string `json:"name" db:"tag_name"`
-
 	// 标签所属分类ID
 	CategoryID int32 `json:"categoryID" db:"tag_category"`
+
+	// 标签名称
+	Name string `json:"name" db:"tag_name"`
 }
