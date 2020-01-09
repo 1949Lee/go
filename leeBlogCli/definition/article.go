@@ -5,10 +5,10 @@ import "leeBlogCli/parser"
 type GetArticleParamArticleType int
 
 type getArticleParamTypeEnum struct {
-	// 未发布未保存的文章
+	// 1 未发布未保存的文章
 	DraftArticle GetArticleParamArticleType
 
-	// 已发布的文章
+	// 2 已发布的文章
 	PublicArticle GetArticleParamArticleType
 }
 
@@ -28,8 +28,19 @@ type EditingArticleInfo struct {
 	// markdown编辑字符串
 	Markdown string `json:"markdown"`
 
-	// 文章信息
-	ArticleHeader ArticleHeader `json:"articleHeader"`
+	// 文章文件信息
+	FileList map[string]ArticleFileListItem `json:"fileList"`
+}
+
+type ArticleFileListItem struct {
+	// 文件名字
+	Name string `json:"name"`
+
+	// 文件大小，单位字节
+	Size int `json:"size"`
+
+	// 服务端的图片路径
+	Url string `json:"url"`
 }
 
 // 文章信息

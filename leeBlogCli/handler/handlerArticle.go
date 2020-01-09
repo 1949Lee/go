@@ -6,9 +6,7 @@ import (
 	"leeBlogCli/config"
 	"leeBlogCli/definition"
 	"leeBlogCli/utils"
-	"log"
 	"net/http"
-	"os"
 	"strconv"
 	"strings"
 )
@@ -102,56 +100,70 @@ func (api *API) GetArticleWithEditingInfo(writer *APIResponseWriter, r *http.Req
 		Code: 0,
 		Data: "成功",
 	}
-	if err := os.MkdirAll(utils.GetDraftPath(int(param.ArticleID)), os.ModePerm); err != nil {
-		log.Printf("GetArticleWithEditingInfo API 打开草稿所在目录时报错 Error:%v", err)
-		result.Code = 1
-		result.Data = "获取上次编辑结果失败"
-		_, _ = writer.Send(result)
-		return
-	}
+	//if err := os.MkdirAll(utils.GetDraftPath(int(param.ArticleID)), os.ModePerm); err != nil {
+	//	log.Printf("GetArticleWithEditingInfo API 打开草稿所在目录时报错 Error:%v", err)
+	//	result.Code = 1
+	//	result.Data = "获取上次编辑结果失败"
+	//	_, _ = writer.Send(result)
+	//	return
+	//}
 	resData := definition.EditingArticleInfo{}
 
-	// 无论是未发布还是发布的文章，都首先获取草稿。
-	filePath := GetDraftFilePath(int(param.ArticleID))
-	draft := make([]byte, 0)
-	_, err = os.Stat(filePath)
-	if err == nil {
-		draft, err = ioutil.ReadFile(filePath)
-		if err != nil {
-			log.Printf("GetArticleWithEditingInfo API 打开草稿文件时报错 Error:%v", err)
-			result.Code = 1
-			result.Data = "获取上次编辑结果失败"
-			_, _ = writer.Send(result)
-			return
+	// 获取文章的已上传文件列表。
+	infos, err := ioutil.ReadDir(utils.GetFilePath(int(param.ArticleID)))
+	resData.FileList = make(map[string]definition.ArticleFileListItem)
+	for _, f := range infos {
+		if !f.IsDir() {
+			resData.FileList[f.Name()] = definition.ArticleFileListItem{
+				Name: f.Name(),
+				Size: int(f.Size()),
+				Url:  "http://localhost:1314" + config.FileResource + getFileName(strconv.Itoa(int(param.ArticleID)), f.Name()),
+			}
 		}
 	}
 
-	// 发布文章的处理：需要返回两部分数据，文章的信息和文章的markdown。文章信息来自数据库，文章的markdown优先从草稿获取，草稿没有则从数据库获取。
+	//// 无论是未发布还是发布的文章，都首先获取草稿。
+	//filePath := GetDraftFilePath(int(param.ArticleID))
+	//draft := make([]byte, 0)
+	//_, err = os.Stat(filePath)
+	//if err == nil {
+	//	draft, err = ioutil.ReadFile(filePath)
+	//	if err != nil {
+	//		log.Printf("GetArticleWithEditingInfo API 打开草稿文件时报错 Error:%v", err)
+	//		result.Code = 1
+	//		result.Data = "获取上次编辑结果失败"
+	//		_, _ = writer.Send(result)
+	//		return
+	//	}
+	//}
+	//
+	//// 发布文章的处理：需要返回两部分数据，文章的信息和文章的markdown。文章信息来自数据库，文章的markdown优先从草稿获取，草稿没有则从数据库获取。
 	if param.Type == definition.GetArticleParamTypeEnum.PublicArticle {
-
-		// 查询数据库获取文章信息
-		article := api.Server.GetArticleHeader(&param)
-		resData.Markdown = article.Content
-		//resData.ArticleHeader.ID = article.ID
-		//resData.ArticleHeader.CreateTime = article.CreateTime
-		//resData.ArticleHeader.Title = article.Title
-		//resData.ArticleHeader.Category = definition.Category{
-		//    ID:article.CategoryID,
-		//}
-		if article.ID == 0 {
-			result.Data = nil
-		} else {
-			result.Data = article
-		}
-
-		// 存在草稿，则使用草稿作为文章的markdown。否则需要到查询数据库的数据用做markdown。
-		if len(draft) > 0 {
-
-		}
+		//
+		//	// 查询数据库获取文章信息
+		//	article := api.Server.GetArticleHeader(&param)
+		//	resData.Markdown = article.Content
+		//	//resData.ArticleHeader.ID = article.ID
+		//	//resData.ArticleHeader.CreateTime = article.CreateTime
+		//	//resData.ArticleHeader.Title = article.Title
+		//	//resData.ArticleHeader.Category = definition.Category{
+		//	//    ID:article.CategoryID,
+		//	//}
+		//	if article.ID == 0 {
+		//		result.Data = nil
+		//	} else {
+		//		result.Data = article
+		//	}
+		//
+		//	// 存在草稿，则使用草稿作为文章的markdown。否则需要到查询数据库的数据用做markdown。
+		//	if len(draft) > 0 {
+		//
+		//	}
 	} else if param.Type == definition.GetArticleParamTypeEnum.DraftArticle { // 未发布的文章的处理：
-
+		//
 	}
-	//result.Data = resData
+
+	result.Data = resData
 	_, _ = writer.Send(result)
 }
 
