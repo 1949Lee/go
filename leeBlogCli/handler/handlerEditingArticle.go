@@ -19,6 +19,7 @@ import (
 )
 
 type WebSocketWriter struct {
+	messageID  int64
 	Conn       *websocket.Conn
 	ResultChan chan *definition.ResponseResult
 	FileServer FileServer
@@ -90,9 +91,11 @@ func websocketLoop(conn *websocket.Conn, writer *WebSocketWriter) {
 			continue
 		}
 		if messageType == websocket.TextMessage {
-			t := time.Now().Nanosecond()
+			t := writer.messageID
+			writer.messageID = writer.messageID + 1
+			//t := int64(time.Now().Nanosecond())
 			uuid := uuid2.New()
-			go func(t *int, uuid uuid2.UUID) {
+			go func(t *int64, uuid uuid2.UUID) {
 				defer func() {
 					if err := recover(); err != nil {
 						log.Printf("text parse error %s", err)
