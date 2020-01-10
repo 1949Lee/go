@@ -84,62 +84,70 @@ func (s *DBServer) InsertArticle(param *definition.SaveArticleInfo) bool {
 
 // 根据传入参数，更新对应文章
 func (s *DBServer) UpdateArticle(param *definition.SaveArticleInfo) bool {
-	//var summary string
-	//if len(param.Text) >= config.SummaryLength {
-	//    summary = param.Text[0:config.SummaryLength]
-	//} else {
-	//    summary = param.Text
-	//}
-	//
-	//tx := s.DB.MustBegin()
-	//defer tx.Rollback()
-	//_, err := tx.Exec(`UPDATE article set article_ctg=?,article_title=?,article_summary=?,article_content=?,article_updatetime=?;`,
-	//    param.ArticleHeader.Category.ID,
-	//    param.ArticleHeader.Title,
-	//    summary, // 文章摘要
-	//    param.Content,
-	//    param.ArticleHeader.UpdateTime,
-	//)
-	//if err != nil {
-	//    _ = tx.Rollback()
-	//    log.Printf("dao.InsertArticle 插入文章报错errror:%v", err)
-	//    return false
-	//}
-	//
-	//relationSQL := strings.Builder{}
-	//relationSQL.WriteString(`INSERT INTO articles_tags_relation (relation_article, relation_tag) VALUES`)
-	//valueSQL := make([]interface{}, 0)
-	//for i, tag := range param.ArticleHeader.Tags {
-	//    if i < len(param.ArticleHeader.Tags)-1 {
-	//        relationSQL.WriteString(`(?,?),`)
-	//    } else {
-	//        relationSQL.WriteString(`(?,?);`)
-	//    }
-	//    valueSQL = append(valueSQL, param.ArticleHeader.ID, tag.ID)
-	//}
-	//
-	//txStmt, err := tx.Prepare(relationSQL.String())
-	//if err != nil {
-	//    _ = tx.Rollback()
-	//    log.Printf("dao.InsertArticle 插入文章和标签关系SQL预编译报错errror:%v", err)
-	//    return false
-	//}
-	//defer txStmt.Close()
-	//_, err = txStmt.Exec(valueSQL...)
-	//if err != nil {
-	//    _ = tx.Rollback()
-	//    log.Printf("dao.InsertArticle 插入文章和标签关系报错errror:%v", err)
-	//    return false
-	//}
-	//
-	//err = tx.Commit()
-	//if err != nil {
-	//    log.Printf("dao.InsertArticle 报错errror:%v", err)
-	//    return false
-	//} else {
-	//    return true
-	//}
-	return true
+	var summary string
+	if len(param.Text) >= config.SummaryLength {
+		summary = param.Text[0:config.SummaryLength]
+	} else {
+		summary = param.Text
+	}
+
+	tx := s.DB.MustBegin()
+	defer tx.Rollback()
+	_, err := tx.Exec(`UPDATE article set article_ctg=?,article_title=?,article_summary=?,article_content=?,article_updatetime=? WHERE article_id=?;`,
+		param.ArticleHeader.Category.ID,
+		param.ArticleHeader.Title,
+		summary, // 文章摘要
+		param.Content,
+		param.ArticleHeader.UpdateTime,
+		param.ArticleHeader.ID,
+	)
+	if err != nil {
+		_ = tx.Rollback()
+		log.Printf("dao.UpdateArticle 更新文章报错errror:%v", err)
+		return false
+	}
+
+	_, err = tx.Exec(`DELETE FROM articles_tags_relation WHERE relation_article=?;`, param.ArticleHeader.ID)
+	if err != nil {
+		_ = tx.Rollback()
+		log.Printf("dao.UpdateArticle 删除原来的关系errror:%v", err)
+		return false
+	}
+
+	relationSQL := strings.Builder{}
+	relationSQL.WriteString(`INSERT INTO articles_tags_relation (relation_article, relation_tag) VALUES`)
+	valueSQL := make([]interface{}, 0)
+	for i, tag := range param.ArticleHeader.Tags {
+		if i < len(param.ArticleHeader.Tags)-1 {
+			relationSQL.WriteString(`(?,?),`)
+		} else {
+			relationSQL.WriteString(`(?,?);`)
+		}
+		valueSQL = append(valueSQL, param.ArticleHeader.ID, tag.ID)
+	}
+
+	txStmt, err := tx.Prepare(relationSQL.String())
+	if err != nil {
+		_ = tx.Rollback()
+		log.Printf("dao.UpdateArticle 插入文章和标签关系SQL预编译报错errror:%v", err)
+		return false
+	}
+	defer txStmt.Close()
+	_, err = txStmt.Exec(valueSQL...)
+	if err != nil {
+		_ = tx.Rollback()
+		log.Printf("dao.UpdateArticle 插入文章和标签关系报错errror:%v", err)
+		return false
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		log.Printf("dao.UpdateArticle 报错errror:%v", err)
+		return false
+	} else {
+		return true
+	}
+	//return true
 }
 
 // 查询文章列表
