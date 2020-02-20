@@ -7,7 +7,7 @@ var (
 	WebsocketTickerDuration time.Duration = time.Millisecond * 3000
 
 	// 服务开启的端口号
-	ServerPort string = "1314"
+	ServerPort string = "1016"
 
 	// 文章所用静态资源（图片等）的存放目录
 	FilePath string = "article-file/"
