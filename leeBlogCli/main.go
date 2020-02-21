@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"leeBlogCli/concurrent"
 	"leeBlogCli/config"
@@ -8,7 +9,14 @@ import (
 	_ "net/http/pprof"
 )
 
+var a = 1
+
 func main() {
+	env := flag.String("env", "dev", "leeBlogCli's running environment")
+	flag.Parse()
+	config.ENV = *env
+	fmt.Println(config.ENV)
+	config.Init()
 	lee := concurrent.Lee{}
 	lee.Run()
 	defer lee.Close()
@@ -26,7 +34,7 @@ func main() {
 	http.HandleFunc(config.NewCategory, lee.API.APIInterceptor(lee.API.NewCategory))
 	http.HandleFunc(config.DeleteCategory, lee.API.APIInterceptor(lee.API.DeleteCategory))
 	http.HandleFunc(config.FileResource, lee.API.ResourceInterceptor(lee.API.FileResource))
-	fmt.Printf("server start with http://localhost:%s\n", config.ServerPort)
+	fmt.Printf("server start with http://%s:%s\n", config.Self_URL, config.ServerPort)
 	err := http.ListenAndServe(":"+config.ServerPort, nil)
 	if err != nil {
 		panic(err)

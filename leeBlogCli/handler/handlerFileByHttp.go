@@ -50,7 +50,7 @@ func (api *API) ReceivingFile(writer *APIResponseWriter, r *http.Request) {
 		for i := 0; i < len(v); i++ {
 			fileResItem := definition.FileResponseItem{
 				FileName: v[i].Filename,
-				URL:      "http://localhost:1314" + config.FileResource + getFileName(param.ArticleID, v[i].Filename),
+				URL:      config.APIFullURL + config.FileResource + getFileName(param.ArticleID, v[i].Filename),
 			}
 			file, err := v[i].Open()
 			if err != nil {

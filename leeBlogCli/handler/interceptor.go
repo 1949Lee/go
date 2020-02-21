@@ -2,8 +2,10 @@ package handler
 
 import (
 	"encoding/json"
+	"leeBlogCli/config"
 	"log"
 	"net/http"
+	"strings"
 )
 
 type APIResponseWriter struct {
@@ -37,7 +39,12 @@ func (api *API) HttpInterceptor(handler APIHandler, header map[string]string) Ht
 				log.Println(err)
 			}
 		}()
-		writer.Header().Add("Access-Control-Allow-Origin", "http://localhost:8080")
+		origin := r.Header.Get("Origin")
+		if !strings.HasSuffix(origin, config.LegalOriginURL) {
+			writer.WriteHeader(403)
+			return
+		}
+		writer.Header().Add("Access-Control-Allow-Origin", origin)
 		for k := range header {
 			writer.Header().Add(k, header[k])
 		}
