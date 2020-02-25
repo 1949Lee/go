@@ -81,6 +81,10 @@ type SaveArticleInfo struct {
 
 // 文章列表接口的参数
 type ArticleListParam struct {
+
+	//// 文章列表查询类型：1 按标题查，2 模糊查询
+	//Type int `json:"type"`
+
 	// 页大小
 	PageSize int `json:"pageSize"`
 
@@ -93,8 +97,8 @@ type ArticleListParam struct {
 	// 标签ID
 	TagIDs string `json:"tagIDs"`
 
-	// 文章标题
-	Title string `json:"title"`
+	// 查询关键字
+	SearchText string `json:"searchText"`
 }
 
 // 文章列表的一项

@@ -151,6 +151,110 @@ func (s *DBServer) UpdateArticle(param *definition.SaveArticleInfo) bool {
 }
 
 // 查询文章列表
+//func (s *DBServer) GetArticleList(param *definition.ArticleListParam) definition.ArticleListResult {
+//	sqlBuilder := strings.Builder{}
+//	sqlBuilder.WriteString(`SELECT * FROM (SELECT
+//	( @rownum := @rownum + 1 ) AS i,
+//	a.article_id,
+//	a.article_ctg,
+//	a.article_title,
+//	a.article_summary,
+//	a.article_createtime,
+//	a.article_updatetime,
+//	c.ctg_name,
+//	GROUP_CONCAT(t.tag_id ORDER BY t.tag_id) AS tag_ids,
+//	GROUP_CONCAT(t.tag_name ORDER BY t.tag_id) AS tag_names
+//FROM
+//	article a
+//	LEFT JOIN category c ON a.article_ctg = c.ctg_id
+//	LEFT JOIN articles_tags_relation r ON r.relation_article = a.article_id
+//	LEFT JOIN tag t ON r.relation_tag = t.tag_id,
+//	(SELECT @rownum := -1 as i) d `)
+//	if !(param.CategoryID == 0 && param.SearchText == "" && param.TagIDs == "") {
+//		condition := strings.Builder{}
+//		conditions := make([]string, 0)
+//		if param.CategoryID != 0 {
+//			condition.WriteString("c.ctg_id = ")
+//			condition.WriteString(strconv.Itoa(int(param.CategoryID)))
+//			conditions = append(conditions, condition.String())
+//			condition.Reset()
+//		}
+//		if param.SearchText != "" {
+//			condition.WriteString("a.article_title LIKE '%")
+//			condition.WriteString(param.SearchText)
+//			condition.WriteString("%'")
+//			conditions = append(conditions, condition.String())
+//			condition.Reset()
+//		}
+//		if param.TagIDs != "" {
+//			condition.WriteString("r.relation_tag IN (")
+//			condition.WriteString(param.TagIDs)
+//			condition.WriteString(")")
+//			conditions = append(conditions, condition.String())
+//			condition.Reset()
+//		}
+//		sqlBuilder.WriteByte('\n')
+//		sqlBuilder.WriteString("WHERE ")
+//		sqlBuilder.WriteString(strings.Join(conditions, " AND "))
+//	}
+//	sqlBuilder.WriteString(`
+//GROUP BY
+//	a.article_id
+//ORDER BY
+//	a.article_updatetime DESC) as a  WHERE a.i >=? AND a.i<?;`)
+//	rows, err := s.DB.Queryx(sqlBuilder.String(), (param.PageIndex-1)*param.PageSize, param.PageIndex*param.PageSize)
+//	if err != nil {
+//		log.Printf("dao.GetArticleList sql报错 error：%v", err)
+//	}
+//	defer rows.Close()
+//	list := definition.ArticleListResult{
+//		List:       []definition.ArticleListResultItem{},
+//		IsLastPage: true,
+//	}
+//	for rows.Next() {
+//		tem := definition.ArticleListResultItem{
+//			Tags: []definition.Tag{},
+//		}
+//		rowNo := 0
+//		tagIDs := ""
+//		tagNames := ""
+//		err := rows.Scan(
+//			&rowNo,
+//			&tem.ID,
+//			&tem.CategoryID,
+//			&tem.Title,
+//			&tem.Summary,
+//			&tem.CreateTime,
+//			&tem.UpdateTime,
+//			&tem.CategoryName,
+//			&tagIDs,
+//			&tagNames)
+//		if err != nil {
+//			log.Printf("dao.GetArticleList 遍历SQL结果集报错 error：%v", err)
+//		}
+//		sliceTagIDs := strings.Split(tagIDs, ",")
+//		sliceTagNames := strings.Split(tagNames, ",")
+//		for i := 0; i < len(sliceTagIDs); i++ {
+//			temTag := definition.Tag{}
+//			tagID, err := strconv.Atoi(sliceTagIDs[i])
+//			if err != nil {
+//				log.Printf("dao.GetArticleList 遍历SQL结果集时转换tag_id报错 error：%v", err)
+//				continue
+//			}
+//			temTag.ID = int32(tagID)
+//			temTag.Name = sliceTagNames[i]
+//			temTag.CategoryID = tem.CategoryID
+//			tem.Tags = append(tem.Tags, temTag)
+//
+//		}
+//
+//		list.List = append(list.List, tem)
+//
+//	}
+//	return list
+//}
+
+// 模糊查询文章列表
 func (s *DBServer) GetArticleList(param *definition.ArticleListParam) definition.ArticleListResult {
 	sqlBuilder := strings.Builder{}
 	sqlBuilder.WriteString(`SELECT * FROM (SELECT
@@ -164,25 +268,34 @@ func (s *DBServer) GetArticleList(param *definition.ArticleListParam) definition
 	c.ctg_name,
 	GROUP_CONCAT(t.tag_id ORDER BY t.tag_id) AS tag_ids,
 	GROUP_CONCAT(t.tag_name ORDER BY t.tag_id) AS tag_names
-FROM
-	article a
+FROM`)
+
+	// 没有查询关键字的话就是所有文章
+	if param.SearchText != "" {
+		//    condition.WriteString("a.article_title LIKE '%")
+		//    condition.WriteString(param.SearchText)
+		//    condition.WriteString("%'")
+		//    conditions = append(conditions, condition.String())
+		//    condition.Reset()
+		sqlBuilder.WriteString(`
+	(SELECT * FROM article WHERE MATCH(article.article_title,article.article_content,article.article_summary) AGAINST('`)
+		sqlBuilder.WriteString(param.SearchText)
+		sqlBuilder.WriteString(`')) a`)
+	} else {
+		sqlBuilder.WriteString(`
+	article a`)
+	}
+	sqlBuilder.WriteString(`
 	LEFT JOIN category c ON a.article_ctg = c.ctg_id
 	LEFT JOIN articles_tags_relation r ON r.relation_article = a.article_id
 	LEFT JOIN tag t ON r.relation_tag = t.tag_id,
 	(SELECT @rownum := -1 as i) d `)
-	if !(param.CategoryID == 0 && param.Title == "" && param.TagIDs == "") {
+	if !(param.CategoryID == 0 && param.TagIDs == "") {
 		condition := strings.Builder{}
 		conditions := make([]string, 0)
 		if param.CategoryID != 0 {
 			condition.WriteString("c.ctg_id = ")
 			condition.WriteString(strconv.Itoa(int(param.CategoryID)))
-			conditions = append(conditions, condition.String())
-			condition.Reset()
-		}
-		if param.Title != "" {
-			condition.WriteString("a.article_title LIKE '%")
-			condition.WriteString(param.Title)
-			condition.WriteString("%'")
 			conditions = append(conditions, condition.String())
 			condition.Reset()
 		}
