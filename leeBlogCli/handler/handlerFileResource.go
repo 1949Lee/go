@@ -3,6 +3,7 @@ package handler
 import (
 	"io/ioutil"
 	"leeBlogCli/config"
+	"leeBlogCli/utils"
 	"log"
 	"net/http"
 	"os"
@@ -11,7 +12,7 @@ import (
 func (api *API) FileResource(writer *APIResponseWriter, r *http.Request) {
 	requestUrl := r.URL.Path
 	filePath := requestUrl[len(config.FileResource):]
-	file, err := os.Open(filePath)
+	file, err := os.Open(utils.GetRootDir() + config.StaticPath + filePath)
 	defer file.Close()
 	if err != nil {
 		log.Println("static resource:", err)

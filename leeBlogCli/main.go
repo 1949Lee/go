@@ -34,6 +34,9 @@ func main() {
 	http.HandleFunc(config.NewCategory, lee.API.APIInterceptor(lee.API.NewCategory))
 	http.HandleFunc(config.DeleteCategory, lee.API.APIInterceptor(lee.API.DeleteCategory))
 	http.HandleFunc(config.FileResource, lee.API.ResourceInterceptor(lee.API.FileResource))
+	//http.HandleFunc(config.FileResource, func (w http.ResponseWriter,r *http.Request){
+	//    log.Println(r.Header.Get("Origin"))
+	//})
 	fmt.Printf("server start with http://%s:%s\n", config.Self_URL, config.ServerPort)
 	err := http.ListenAndServe(":"+config.ServerPort, nil)
 	if err != nil {

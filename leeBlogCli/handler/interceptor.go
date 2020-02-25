@@ -73,7 +73,15 @@ func (api *API) APIInterceptor(handler APIHandler) HttpHandler {
 // 资源拦截
 func (api *API) ResourceInterceptor(handler APIHandler) HttpHandler {
 	// 需要加严格的验证。
-	return api.HttpInterceptor(handler, map[string]string{
-		"Access-Control-Allow-Methods": "GET",
-	})
+	return func(writer http.ResponseWriter, r *http.Request) {
+		// 请求方发送请求时当请求为options时，直接返回200。
+		if r.Method == "Get" {
+			writer.WriteHeader(403)
+			return
+		}
+		apiWriter := APIResponseWriter{
+			writer: writer,
+		}
+		handler(&apiWriter, r)
+	}
 }
