@@ -88,7 +88,7 @@ type ArticleListParam struct {
 	// 页大小
 	PageSize int `json:"pageSize"`
 
-	// 页码
+	// 页码 从1开始
 	PageIndex int `json:"pageIndex"`
 
 	// 类别ID
