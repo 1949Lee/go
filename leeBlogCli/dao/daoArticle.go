@@ -280,7 +280,7 @@ FROM`)
 		sqlBuilder.WriteString(`
 	(SELECT * FROM article WHERE MATCH(article.article_title,article.article_content,article.article_summary) AGAINST('`)
 		sqlBuilder.WriteString(param.SearchText)
-		sqlBuilder.WriteString(`')) a`)
+		sqlBuilder.WriteString(`'  IN BOOLEAN MODE)) a`)
 	} else {
 		sqlBuilder.WriteString(`
 	article a`)
