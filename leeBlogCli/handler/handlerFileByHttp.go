@@ -89,6 +89,7 @@ func (api *API) ReceivingFile(writer *APIResponseWriter, r *http.Request) {
 				fileResItem.URL = ""
 			}
 			_ = file.Close()
+			// TODO 执行服务器命令来转换为渐进式图片，质量参数可变做成配置项：convert 1.jpg -quality 80  -interlace plane 2.jpg
 			if fileResItem.URL != "" {
 				fileres = append(fileres, fileResItem)
 			}
