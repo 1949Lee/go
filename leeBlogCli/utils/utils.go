@@ -16,18 +16,22 @@ func GetRootDir() string {
 	return builder.String()
 }
 
-// 根据传入的文章id和文件名得到文章对应的存放文件的路径
+// 根据传入的文章id和文件名得到文章对应的存放文件（图片等）的文件夹路径
 func GetFilePath(articleID int) string {
-	builder := strings.Builder{}
-	builder.WriteString(GetRootDir())
-	builder.WriteString(config.FilePath)
-	builder.WriteString(strconv.Itoa(articleID))
-	//builder.WriteString("/")
-	//builder.WriteString(fileName)
-	return builder.String()
+	if config.ENV == "dev" {
+		return "article-file/" + strconv.Itoa(articleID)
+	} else {
+		builder := strings.Builder{}
+		builder.WriteString(GetRootDir())
+		builder.WriteString(config.FilePath)
+		builder.WriteString(strconv.Itoa(articleID))
+		//builder.WriteString("/")
+		//builder.WriteString(fileName)
+		return builder.String()
+	}
 }
 
-// 根据传入的文章id和文件名得到文章对应的存放文件的路径
+// 根据传入的文章id和文件名得到文章对应的存放草稿的路径
 func GetDraftPath(articleID int) string {
 	builder := strings.Builder{}
 	builder.WriteString(GetRootDir())
