@@ -17,6 +17,12 @@ var GetArticleParamTypeEnum = getArticleParamTypeEnum{
 	PublicArticle: 2,
 }
 
+// 只有文章ID一个入参
+type ArticleIDParam struct {
+	// 文章ID
+	ArticleID int32 `json:"articleID"`
+}
+
 // 获取文章和文章信息的请求的参数
 type GetArticleParam struct {
 	Type      GetArticleParamArticleType `json:"type"`
@@ -30,6 +36,12 @@ type EditingArticleInfo struct {
 
 	// 文章文件信息
 	FileList map[string]ArticleFileListItem `json:"fileList"`
+}
+
+// 文章的已上传文件列表
+type ArticleFileList struct {
+	// 文章文件列表
+	List map[string]ArticleFileListItem `json:"fileList"`
 }
 
 type ArticleFileListItem struct {

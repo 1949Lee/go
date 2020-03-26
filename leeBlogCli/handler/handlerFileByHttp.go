@@ -24,6 +24,16 @@ func getFileName(articleID string, fileName string) string {
 	return builder.String()
 }
 
+// 根据传入的文章id和文件名得到最终文件名
+func getFileSourceName(articleID string, fileName string) string {
+	builder := strings.Builder{}
+	builder.WriteString(config.FileSourcePath)
+	builder.WriteString(articleID)
+	builder.WriteString("/")
+	builder.WriteString(fileName)
+	return builder.String()
+}
+
 // 接收上传的文件
 func (api *API) ReceivingFile(writer *APIResponseWriter, r *http.Request) {
 	result := definition.ResponseResult{
@@ -162,5 +172,44 @@ func (api *API) DeleteFile(writer *APIResponseWriter, r *http.Request) {
 		}
 	}
 
+	_, _ = writer.Send(result)
+}
+
+// 获取文章的上传的文件列表
+func (api *API) GetArticleFileList(writer *APIResponseWriter, r *http.Request) {
+	body, _ := ioutil.ReadAll(r.Body)
+	defer r.Body.Close()
+	param := definition.ArticleIDParam{}
+	err := json.Unmarshal(body, &param)
+	if err != nil {
+		_, _ = writer.Send(definition.ResponseResult{Code: 2, Type: 4, Data: "参数获取失败"})
+		return
+	}
+	if param.ArticleID == 0 {
+		_, _ = writer.Send(definition.ResponseResult{Code: 1, Type: 4, Data: "参数文章ID缺失"})
+		return
+	}
+	result := definition.ResponseResult{
+		Type: 4,
+		Code: 0,
+		Data: "成功",
+	}
+
+	resData := definition.ArticleFileList{}
+
+	// 获取文章的已上传文件列表。
+	infos, err := ioutil.ReadDir(utils.GetFilePath(int(param.ArticleID)))
+	resData.List = make(map[string]definition.ArticleFileListItem)
+	for _, f := range infos {
+		if !f.IsDir() {
+			resData.List[f.Name()] = definition.ArticleFileListItem{
+				Name: f.Name(),
+				Size: int(f.Size()),
+				Url:  config.APIFullURL + config.FileResource + getFileSourceName(strconv.Itoa(int(param.ArticleID)), f.Name()),
+			}
+		}
+	}
+
+	result.Data = resData
 	_, _ = writer.Send(result)
 }

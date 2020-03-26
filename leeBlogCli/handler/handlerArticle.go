@@ -117,7 +117,7 @@ func (api *API) GetArticleWithEditingInfo(writer *APIResponseWriter, r *http.Req
 			resData.FileList[f.Name()] = definition.ArticleFileListItem{
 				Name: f.Name(),
 				Size: int(f.Size()),
-				Url:  config.APIFullURL + config.FileResource + getFileName(strconv.Itoa(int(param.ArticleID)), f.Name()),
+				Url:  config.APIFullURL + config.FileResource + getFileSourceName(strconv.Itoa(int(param.ArticleID)), f.Name()),
 			}
 		}
 	}

@@ -22,6 +22,9 @@ var (
 
 	StaticPath string = "lee-blog/"
 
+	// 文件显示的路径
+	FileSourcePath string = "article-file/"
+
 	// 文章所用静态资源（图片等）的存放目录
 	FilePath string = StaticPath + "article-file/"
 
@@ -44,7 +47,7 @@ func Init() {
 		LegalOriginURL = "localhost:8080"
 	case "prod":
 		Self_URL = "blogserver.jiaxuanlee.com"
-		APIFullURL = "http://" + Self_URL
+		APIFullURL = "https://" + Self_URL
 		LegalOriginURL = "jiaxuanlee.com"
 	}
 }
