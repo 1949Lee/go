@@ -2,12 +2,14 @@ package definition
 
 // MySQL数据结构体：作者
 type Author struct {
-	ID       int32  `db:"author_id"`
-	Nickname string `db:"author_nickname"`
-	Email    string `db:"author_email"`
-	Password string `db:"author_password"`
-	Motto    string `db:"author_motto"`
-	IsActive byte   `db:"author_is_active"`
+	ID         int32  `db:"author_id"`
+	Nickname   string `db:"author_nickname"`
+	Email      string `db:"author_email"`
+	Password   string `db:"author_password"`
+	Motto      string `db:"author_motto"`
+	IsActive   byte   `db:"author_is_active"`
+	DeviceUUID string `db:"author_device_uuid"`
+	leeToken   string `db:"author_lee_token"`
 }
 
 // MySQL数据结构体：文章

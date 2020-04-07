@@ -56,3 +56,18 @@ type FileResponseItem struct {
 
 // 服务器收到文件后，返回的结果体
 type FileResponse []FileResponseItem
+
+// 手机端确认登录接口参数
+type ConfirmLoginParam struct {
+	// 用户邮箱
+	Email string `json:"key"`
+
+	// 设备的UUID
+	DeviceUUID string `json:"uuid"`
+}
+
+type ConfirmLoginResponse struct {
+
+	// 登录的token
+	LeeToken string `json:"leeToken"`
+}
