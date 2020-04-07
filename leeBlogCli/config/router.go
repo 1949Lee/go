@@ -3,7 +3,10 @@ package config
 var (
 	// websocket编译markdown的服务地址路由。
 	WebsocketParserPath = "/ws/parser"
-	Site                = "/"
+
+	// 扫码登录的websocket地址路由
+	WebsocketCheckLoginPath = "/ws/check-login"
+	Site                    = "/"
 
 	// 接口路由 文章添加新附件
 	NewFile = Site + "new-file"

@@ -44,6 +44,7 @@ func (api *API) HttpInterceptor(handler APIHandler, header map[string]string) Ht
 			writer.WriteHeader(403)
 			return
 		}
+		// TODO 登录校验
 		writer.Header().Add("Access-Control-Allow-Origin", origin)
 		for k := range header {
 			writer.Header().Add(k, header[k])

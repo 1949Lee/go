@@ -1,7 +1,11 @@
 package handler
 
-import "leeBlogCli/server"
+import (
+	"github.com/gorilla/websocket"
+	"leeBlogCli/server"
+)
 
 type API struct {
-	Server *server.Blog
+	Server    *server.Blog
+	LoginConn *websocket.Conn
 }

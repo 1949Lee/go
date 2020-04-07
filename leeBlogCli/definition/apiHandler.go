@@ -66,6 +66,12 @@ type ConfirmLoginParam struct {
 	DeviceUUID string `json:"uuid"`
 }
 
+// 登录二维码的key
+type GetLoginKeyResponse struct {
+	Email string `json:"key"`
+}
+
+// 扫码登录成功后的返回参数
 type ConfirmLoginResponse struct {
 
 	// 登录的token

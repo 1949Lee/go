@@ -1,15 +1,17 @@
 package definition
 
+import "database/sql"
+
 // MySQL数据结构体：作者
 type Author struct {
-	ID         int32  `db:"author_id"`
-	Nickname   string `db:"author_nickname"`
-	Email      string `db:"author_email"`
-	Password   string `db:"author_password"`
-	Motto      string `db:"author_motto"`
-	IsActive   byte   `db:"author_is_active"`
-	DeviceUUID string `db:"author_device_uuid"`
-	leeToken   string `db:"author_lee_token"`
+	ID         int32          `json:"id" db:"author_id"`
+	Nickname   string         `json:"nickname" db:"author_nickname"`
+	Email      string         `json:"email" db:"author_email"`
+	Password   string         `json:"-" db:"author_password"`
+	Motto      string         `json:"motto" db:"author_motto"`
+	IsActive   byte           `json:"isActive" db:"author_is_active"`
+	DeviceUUID string         `json:"-" db:"author_device_uuid"`
+	LeeToken   sql.NullString `json:"-" db:"author_lee_token"`
 }
 
 // MySQL数据结构体：文章
