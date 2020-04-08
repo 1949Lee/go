@@ -62,8 +62,8 @@ type ConfirmLoginParam struct {
 	// 用户邮箱
 	Email string `json:"key"`
 
-	// 设备的UUID
-	DeviceUUID string `json:"uuid"`
+	// email和设备的uuid拼接后的md5串
+	Passport string `json:"passport"`
 }
 
 // 登录二维码的key

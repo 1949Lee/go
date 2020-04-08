@@ -22,6 +22,7 @@ var loginUpgrade = websocket.Upgrader{
 	},
 }
 
+// 扫描二维码登录轮训的WebSocket接口
 func (api *API) WebSocketCheckLogin(writer http.ResponseWriter, r *http.Request) {
 	conn, err := upgrade.Upgrade(writer, r, nil)
 	if err != nil {
@@ -29,10 +30,14 @@ func (api *API) WebSocketCheckLogin(writer http.ResponseWriter, r *http.Request)
 		return
 	}
 	api.LoginConn = conn
-	defer conn.Close()
+	defer func() {
+		_ = conn.Close()
+		api.LoginConn = nil
+	}()
 	api.websocketLoginLoop(conn)
 }
 
+// 扫描二维码登录轮训的WebSocket接口的主循环
 func (api *API) websocketLoginLoop(conn *websocket.Conn) {
 	defer func() {
 		if err := recover(); err != nil {
@@ -55,10 +60,6 @@ func (api *API) websocketLoginLoop(conn *websocket.Conn) {
 			continue
 		}
 		if messageType == websocket.TextMessage {
-			//result := definition.ResponseResult{}
-			//if err := conn.WriteJSON(result); err != nil {
-			//   log.Printf("write err:%v", err)
-			//}
 			// 收到网站的任意消息，则返回管理员email
 			if string(p) != "" {
 				result := definition.APIResult{
@@ -89,14 +90,27 @@ func (api *API) ConfirmLogin(writer *APIResponseWriter, r *http.Request) {
 		return
 	}
 
-	result := definition.ResponseResult{
-		Type: 4,
+	result := definition.APIResult{
 		Code: 0,
 		Data: "成功",
 	}
 
-	//list := api.Server.ArticleList(&param)
-	//result.Data = list
+	data := api.Server.ConfirmLoginInfo(&param)
+	if data.LeeToken == "-1" {
+		result.Data = nil
+		result.Message = "登录失败"
+		result.Code = 1
+	} else {
+		result.Data = data
+		api.Server.LeeTokenMap[param.Email] = data.LeeToken
+	}
+
+	// 通知WebSocketCheckLogin接口登录失败/成功
+	if api.LoginConn != nil {
+		if err := api.LoginConn.WriteJSON(result); err != nil {
+			log.Printf("write err:%v", err)
+		}
+	}
 
 	_, _ = writer.Send(result)
 }

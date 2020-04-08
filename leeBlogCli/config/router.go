@@ -8,6 +8,9 @@ var (
 	WebsocketCheckLoginPath = "/ws/check-login"
 	Site                    = "/"
 
+	// 确认登录路由
+	ConfirmLogin = Site + "confirm-login"
+
 	// 接口路由 文章添加新附件
 	NewFile = Site + "new-file"
 

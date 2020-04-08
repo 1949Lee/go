@@ -14,7 +14,8 @@ func (b *Lee) Run() {
 	daoServer := dao.DBServer{}
 	daoServer.Open()
 	blog := server.Blog{
-		Dao: &daoServer,
+		Dao:         &daoServer,
+		LeeTokenMap: map[string]string{},
 	}
 	api := handler.API{
 		Server: &blog,

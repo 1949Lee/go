@@ -22,6 +22,7 @@ func main() {
 	defer lee.Close()
 	http.HandleFunc(config.WebsocketParserPath, lee.API.WebSocketReadMarkdownText)
 	http.HandleFunc(config.WebsocketCheckLoginPath, lee.API.WebSocketCheckLogin)
+	http.HandleFunc(config.ConfirmLogin, lee.API.APIInterceptor(lee.API.ConfirmLogin))
 	http.HandleFunc(config.NewFile, lee.API.APIInterceptor(lee.API.ReceivingFile))
 	http.HandleFunc(config.DeleteFile, lee.API.APIInterceptor(lee.API.DeleteFile))
 	http.HandleFunc(config.NewArticleID, lee.API.APIInterceptor(lee.API.NewArticleID))
