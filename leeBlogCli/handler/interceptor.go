@@ -3,6 +3,7 @@ package handler
 import (
 	"encoding/json"
 	"leeBlogCli/config"
+	"leeBlogCli/definition"
 	"log"
 	"net/http"
 	"strings"
@@ -32,7 +33,7 @@ type HttpHandler func(http.ResponseWriter, *http.Request)
 type APIHandler func(*APIResponseWriter, *http.Request)
 
 // Http拦截器
-func (api *API) HttpInterceptor(handler APIHandler, header map[string]string) HttpHandler {
+func (api *API) HttpInterceptor(handler APIHandler, header map[string]string, options definition.InterceptorOptions) HttpHandler {
 	return func(writer http.ResponseWriter, r *http.Request) {
 		defer func() {
 			if err := recover(); err != nil {
@@ -44,7 +45,6 @@ func (api *API) HttpInterceptor(handler APIHandler, header map[string]string) Ht
 			writer.WriteHeader(403)
 			return
 		}
-		// TODO 登录校验
 		writer.Header().Add("Access-Control-Allow-Origin", origin)
 		for k := range header {
 			writer.Header().Add(k, header[k])
@@ -56,6 +56,22 @@ func (api *API) HttpInterceptor(handler APIHandler, header map[string]string) Ht
 		}
 		//下面是接口真正的处理
 		writer.Header().Add("Access-Control-Allow-Credentials", "true")
+		if options.CheckLogin {
+			// 验证登录
+			loginStatus := api.CheckLogin(r)
+			if !loginStatus {
+				//用户未登录
+				result := definition.APIResult{
+					Code: definition.ResponseServerCode.NotLogin,
+					Data: "用户未登录",
+				}
+				tempWriter := APIResponseWriter{
+					writer: writer,
+				}
+				_, _ = tempWriter.Send(result)
+				return
+			}
+		}
 		apiWriter := APIResponseWriter{
 			writer: writer,
 		}
@@ -64,11 +80,11 @@ func (api *API) HttpInterceptor(handler APIHandler, header map[string]string) Ht
 }
 
 // 普通接口拦截
-func (api *API) APIInterceptor(handler APIHandler) HttpHandler {
+func (api *API) APIInterceptor(handler APIHandler, options definition.InterceptorOptions) HttpHandler {
 	return api.HttpInterceptor(handler, map[string]string{
 		"Access-Control-Allow-Methods": "POST, OPTIONS",
-		"Access-Control-Allow-Headers": "POST, Content-Type",
-	})
+		"Access-Control-Allow-Headers": "POST, Content-Type,leeKey,leeToken",
+	}, options)
 }
 
 // 资源拦截

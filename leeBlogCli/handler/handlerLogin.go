@@ -24,7 +24,7 @@ var loginUpgrade = websocket.Upgrader{
 
 // 扫描二维码登录轮训的WebSocket接口
 func (api *API) WebSocketCheckLogin(writer http.ResponseWriter, r *http.Request) {
-	conn, err := upgrade.Upgrade(writer, r, nil)
+	conn, err := loginUpgrade.Upgrade(writer, r, nil)
 	if err != nil {
 		log.Println(err)
 		return

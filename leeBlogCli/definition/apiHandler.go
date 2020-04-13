@@ -77,3 +77,16 @@ type ConfirmLoginResponse struct {
 	// 登录的token
 	LeeToken string `json:"leeToken"`
 }
+
+// 返回码的枚举
+var ResponseServerCode = struct {
+	// 未登录
+	NotLogin ResponseCodeType
+}{
+	NotLogin: 1479,
+}
+
+type InterceptorOptions struct {
+	// 是否需要登录，true，表示需要；false，表示不需要。
+	CheckLogin bool
+}

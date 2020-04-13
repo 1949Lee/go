@@ -171,7 +171,6 @@ func (api *API) GetArticleWithEditingInfo(writer *APIResponseWriter, r *http.Req
 func (api *API) ArticleList(writer *APIResponseWriter, r *http.Request) {
 	body, _ := ioutil.ReadAll(r.Body)
 	defer r.Body.Close()
-
 	param := definition.ArticleListParam{}
 	err := json.Unmarshal(body, &param)
 	if err != nil {
