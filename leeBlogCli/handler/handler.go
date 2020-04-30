@@ -52,7 +52,7 @@ type API struct {
 func (api *API) CheckLogin(r *http.Request) bool {
 	leeKey := r.Header.Get("leeKey")
 	leeToken := r.Header.Get("leeToken")
-	if leeKey != "" || leeToken != "" {
+	if leeKey == "" || leeToken == "" {
 		return false
 	}
 
