@@ -257,8 +257,7 @@ func (s *DBServer) UpdateArticle(param *definition.SaveArticleInfo) bool {
 // 模糊查询文章列表
 func (s *DBServer) GetArticleList(param *definition.ArticleListParam) definition.ArticleListResult {
 	sqlBuilder := strings.Builder{}
-	sqlBuilder.WriteString(`SELECT * FROM (SELECT
-	( @rownum := @rownum + 1 ) AS i,
+	sqlBuilder.WriteString(`SELECT * FROM (SELECT (@rownum := @rownum + 1) as i ,a.* FROM (SELECT
 	a.article_id,
 	a.article_ctg,
 	a.article_title,
@@ -288,8 +287,7 @@ FROM`)
 	sqlBuilder.WriteString(`
 	LEFT JOIN category c ON a.article_ctg = c.ctg_id
 	LEFT JOIN articles_tags_relation r ON r.relation_article = a.article_id
-	LEFT JOIN tag t ON r.relation_tag = t.tag_id,
-	(SELECT @rownum := -1 as i) d `)
+	LEFT JOIN tag t ON r.relation_tag = t.tag_id`)
 	if !(param.CategoryID == 0 && param.TagIDs == "") {
 		condition := strings.Builder{}
 		conditions := make([]string, 0)
@@ -314,7 +312,7 @@ FROM`)
 GROUP BY
 	a.article_id
 ORDER BY
-	a.article_updatetime DESC) as a  WHERE a.i >=? AND a.i<?;`)
+	a.article_updatetime DESC) as a,(SELECT @rownum := -1) d) as a WHERE a.i >=? AND a.i<?;`)
 	rows, err := s.DB.Queryx(sqlBuilder.String(), (param.PageIndex-1)*param.PageSize, param.PageIndex*param.PageSize)
 	if err != nil {
 		log.Printf("dao.GetArticleList sql报错 error：%v", err)
