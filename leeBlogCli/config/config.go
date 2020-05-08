@@ -6,7 +6,7 @@ var (
 	// 程序运行环境：dev表示本地，prod表示线上。
 	ENV string = ""
 
-	// API的完成URL，形如：http://blogserver.jiaxuanlee.com:1314
+	// API的完成URL，形如：http://blogserver.jiaxuanlee.com
 	APIFullURL = ""
 
 	LegalOriginURL = ""
