@@ -537,7 +537,11 @@ func (l *Line) ImageParse() {
 						l.Tokens[len(l.Tokens)-1].Text += "[" + tempToken.Text + "](" + string(l.Origin[l.textStart:])
 						updateToken(&l.Tokens[len(l.Tokens)-1])
 					} else {
-						l.appendNewToken(&Token{Text: "[" + tempToken.Text + "](" + string(l.Origin[l.textStart:]), TokenType: "text"})
+						text := ""
+						if l.textStart != -1 && l.textStart < len(l.Origin) {
+							text = string(l.Origin[l.textStart:])
+						}
+						l.appendNewToken(&Token{Text: "[" + tempToken.Text + "](" + text, TokenType: "text"})
 					}
 					l.textStart = -1
 					l.unresolvedTokens = unresolvedTokenSlice{}
@@ -580,10 +584,12 @@ func (l *Line) HeaderTitleParse() {
 				}
 			}
 		}
-		l.appendNewToken(&Token{Text: string(l.Origin[l.textStart:]), NodeTagName: "h" + strconv.Itoa(headerLevel), TokenType: "header"})
-		l.parseWithOther(func(line *Line) {
-			line.ImageParse()
-		})
+		if l.textStart < len(l.Origin) && l.textStart != -1 {
+			l.appendNewToken(&Token{Text: string(l.Origin[l.textStart:]), NodeTagName: "h" + strconv.Itoa(headerLevel), TokenType: "header"})
+			l.parseWithOther(func(line *Line) {
+				line.ImageParse()
+			})
+		}
 	} else { // 行开头不是#，直接进行其他转换
 		for i := 0; i < len(l.Origin); i++ {
 			ch := l.Origin[i]
@@ -983,6 +989,34 @@ func isInBlock(lineText string) (bool, BlockResult) {
 	return false, BlockResult{TokenType: "text", IndentCount: indentCount}
 }
 
+func markdownLinesParse(str string, blockResult BlockResult, dataList *[]TokenSlice) {
+	line := Line{
+		Origin: []rune(str),
+		Tokens: TokenSlice{}}
+	var tokens TokenSlice
+	if blockResult.IndentCount == 4 {
+		line.Origin = []rune(str[blockResult.IndentCount:])
+		line.LineParse()
+		tokens = TokenSlice{
+			{
+				TokenType:   "text-indent-tag",
+				NodeTagName: "span",
+				NodeClass:   "text-indent-tag",
+				Text:        "缩进",
+			},
+		}
+		tokens = append(tokens, line.Tokens...)
+	} else {
+		line.LineParse()
+		if len(line.Tokens) > 0 {
+			tokens = line.Tokens
+		}
+	}
+	if tokens != nil {
+		*dataList = append(*dataList, tokens)
+	}
+}
+
 // 接受markdown字符串，并将之转化为html
 func MarkdownParse(markdownText string) ([]TokenSlice, string) {
 	//scanner := bufio.NewScanner(strings.NewReader(markdownText))
@@ -1001,30 +1035,14 @@ func MarkdownParse(markdownText string) ([]TokenSlice, string) {
 		if ok, blockResult := isInBlock(list[i]); ok {
 			var tokens TokenSlice
 			i, tokens = blockParse(list, i, blockResult)
-			i--
-			dataList = append(dataList, tokens)
-		} else {
-			line := Line{
-				Origin: []rune(list[i]),
-				Tokens: TokenSlice{}}
-			var tokens TokenSlice
-			if blockResult.IndentCount == 4 {
-				line.Origin = []rune(list[i][blockResult.IndentCount:])
-				line.LineParse()
-				tokens = TokenSlice{
-					{
-						TokenType:   "text-indent-tag",
-						NodeTagName: "span",
-						NodeClass:   "text-indent-tag",
-						Text:        "缩进",
-					},
-				}
-				tokens = append(tokens, line.Tokens...)
+			if tokens == nil {
+				markdownLinesParse(list[i], blockResult, &dataList)
 			} else {
-				line.LineParse()
-				tokens = line.Tokens
+				i--
+				dataList = append(dataList, tokens)
 			}
-			dataList = append(dataList, tokens)
+		} else {
+			markdownLinesParse(list[i], blockResult, &dataList)
 		}
 	}
 	return dataList, LinesToHtml(dataList)
@@ -1397,8 +1415,13 @@ func codeBlockParse(lines []string, index int, _ BlockResult) (int, TokenSlice) 
 		}}
 	var buffer bytes.Buffer
 	i := index
-	re := regexp.MustCompile("`+\\s*(.+)")
-	tokens[0].Children[0].NodeClass = re.FindAllStringSubmatch(lines[i], -1)[0][1]
+	re := regexp.MustCompile("`+\\s*([^`]+)")
+	lang := re.FindAllStringSubmatch(lines[i], -1)
+	// 判断是否输入语言
+	if lang == nil {
+		return index, nil
+	}
+	tokens[0].Children[0].NodeClass = lang[0][1]
 	i++
 	for ; i < len(lines); i++ {
 		ok, temResult := isInBlock(lines[i])
@@ -1409,6 +1432,11 @@ func codeBlockParse(lines []string, index int, _ BlockResult) (int, TokenSlice) 
 			buffer.WriteString(lines[i])
 			buffer.WriteString("\n")
 		}
+	}
+	// 判断是否检测到代码块的结束标志。
+	if i == len(lines) {
+		// 没有检测到代码块儿结束
+		return index, nil
 	}
 	tokens[0].Children[0].Text = buffer.String()
 	return index, tokens
