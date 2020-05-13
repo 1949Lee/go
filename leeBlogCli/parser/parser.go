@@ -271,7 +271,11 @@ func (l *Line) LinkTextParse() {
 								l.Tokens[len(l.Tokens)-1].Text += "[" + string(l.Origin[l.textStart:]) + "]"
 								updateToken(&l.Tokens[len(l.Tokens)-1])
 							} else {
-								l.appendNewToken(&Token{Text: "[" + string(l.Origin[l.textStart:]) + "]", TokenType: "text"})
+								text := ""
+								if l.textStart != -1 && l.textStart < len(l.Origin) {
+									text = string(l.Origin[l.textStart:])
+								}
+								l.appendNewToken(&Token{Text: "[" + text + "]", TokenType: "text"})
 							}
 							l.textStart = -1
 							l.unresolvedTokens = unresolvedTokenSlice{}
@@ -471,7 +475,11 @@ func (l *Line) ImageParse() {
 								l.Tokens[len(l.Tokens)-1].Text += "[" + string(l.Origin[l.textStart:]) + "]"
 								updateToken(&l.Tokens[len(l.Tokens)-1])
 							} else {
-								l.appendNewToken(&Token{Text: "[" + string(l.Origin[l.textStart:]) + "]", TokenType: "text"})
+								text := ""
+								if l.textStart != -1 && l.textStart < len(l.Origin) {
+									text = string(l.Origin[l.textStart:])
+								}
+								l.appendNewToken(&Token{Text: "[" + text + "]", TokenType: "text"})
 							}
 							l.textStart = -1
 							l.unresolvedTokens = unresolvedTokenSlice{}
@@ -947,7 +955,7 @@ func getIndentCount(lineText string) (int, string) {
 func isInBlock(lineText string) (bool, BlockResult) {
 	//origin := []rune(lineText)
 	indentCount, realRune := getIndentCount(lineText)
-	if lineText == "" {
+	if lineText == "" || realRune == "" {
 		return false, BlockResult{}
 	}
 	switch realRune[0] {
@@ -966,7 +974,7 @@ func isInBlock(lineText string) (bool, BlockResult) {
 			}
 		}
 	case '>': // 样式块styled-block或文字引用block-quote
-		if realRune[1] == '>' && realRune[2] == '>' {
+		if len(realRune) >= 3 && realRune[1] == '>' && realRune[2] == '>' {
 			return true, BlockResult{TokenType: "styled-block"}
 		} else {
 			return true, BlockResult{TokenType: "block-quote"}
@@ -1038,7 +1046,9 @@ func MarkdownParse(markdownText string) ([]TokenSlice, string) {
 			if tokens == nil {
 				markdownLinesParse(list[i], blockResult, &dataList)
 			} else {
-				i--
+				if i < len(list) {
+					i--
+				}
 				dataList = append(dataList, tokens)
 			}
 		} else {
@@ -1323,27 +1333,31 @@ func blockQuoteParse(lines []string, index int, _ BlockResult) (int, TokenSlice)
 				NodeTagName: "div",
 				NodeClass:   "block-quote-line",
 			})
-			if subOk, subResult := isInBlock(lines[i][2:]); subOk {
-				temTokens := make(TokenSlice, 0)
-				var subI int
-				var subLines []string
-				l := i
-				for ; l < len(lines); l++ {
-					if len(lines[l]) >= 2 {
-						subLines = append(subLines, lines[l][2:])
-					} else {
-						break
+			if len(lines[i]) > 2 {
+				if subOk, subResult := isInBlock(lines[i][2:]); subOk {
+					temTokens := make(TokenSlice, 0)
+					var subI int
+					var subLines []string
+					l := i
+					for ; l < len(lines); l++ {
+						if len(lines[l]) >= 2 {
+							subLines = append(subLines, lines[l][2:])
+						} else {
+							break
+						}
+					}
+					subI, temTokens = blockParse(subLines, 0, subResult)
+					i = i + subI
+					tokens[0].Children[len(tokens[0].Children)-1].Children = append(tokens[0].Children[len(tokens[0].Children)-1].Children, temTokens...)
+					i--
+				} else {
+					if 2+temResult.IndentCount < len([]rune(lines[i])) {
+						text := []rune(lines[i])[2+temResult.IndentCount:]
+						line := Line{Origin: text, Tokens: TokenSlice{}}
+						line.LineParse()
+						tokens[0].Children[len(tokens[0].Children)-1].Children = line.Tokens
 					}
 				}
-				subI, temTokens = blockParse(subLines, 0, subResult)
-				i = i + subI
-				tokens[0].Children[len(tokens[0].Children)-1].Children = append(tokens[0].Children[len(tokens[0].Children)-1].Children, temTokens...)
-				i--
-			} else {
-				text := []rune(lines[i])[2+temResult.IndentCount:]
-				line := Line{Origin: text, Tokens: TokenSlice{}}
-				line.LineParse()
-				tokens[0].Children[len(tokens[0].Children)-1].Children = line.Tokens
 			}
 		} else { // 引用块结束
 			index = i
