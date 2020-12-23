@@ -8,7 +8,7 @@ func (b *Blog) GenerateArticleID() (ID int32) {
 	return ID
 }
 
-// 生成新的文章ID。目前是找到数据库中最大的id并加1。分布式之后可以改成snowflake算法生成ID
+// 获取分类和分类下的所有标签
 func (b *Blog) GetTagsGroupByCategory() (c []definition.CategoryWithTags) {
 	var err error
 	c, err = b.Dao.SelectTagsGroupByCategory()

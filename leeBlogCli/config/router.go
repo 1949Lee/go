@@ -23,6 +23,9 @@ var (
 	// 接口路由 获取分类，并查询每个分类下的标签
 	TagsGroupByCategory = Site + "categories-with-tags"
 
+	// 接口路由 获取分类，并查询每个分类下的标签，每个标签会附带一个数组，数组是所有含有该标签的文章的ID
+	TagsWithArticleID = Site + "tags-with-article-id"
+
 	// 接口路由 添加新标签
 	NewTag = Site + "new-tag"
 
@@ -41,7 +44,7 @@ var (
 	// 接口路由 新增或更新文章信息
 	SaveArticle = Site + "save-article"
 
-	// 接口路由 新增或更新文章信息
+	// 接口路由 获取文章列表
 	ArticleList = Site + "article-list"
 
 	// 接口路由 展示文章

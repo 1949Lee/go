@@ -20,7 +20,6 @@ func (api *API) NewArticleID(writer *APIResponseWriter, r *http.Request) {
 	_, _ = writer.Send(result)
 }
 
-// 生成新的文章ID的API
 func (api *API) GetTagsGroupByCategory(writer *APIResponseWriter, r *http.Request) {
 	result := definition.APIResult{
 		Code: 0,

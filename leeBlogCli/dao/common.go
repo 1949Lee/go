@@ -28,6 +28,7 @@ func (s *DBServer) SelectTagsGroupByCategory() (c []definition.CategoryWithTags,
 	if err != nil {
 		log.Printf("%v", err)
 	}
+	defer rows.Close()
 	c = make([]definition.CategoryWithTags, 0)
 	category := definition.CategoryWithTags{}
 	builder := strings.Builder{}
@@ -43,7 +44,6 @@ func (s *DBServer) SelectTagsGroupByCategory() (c []definition.CategoryWithTags,
 		builder.WriteString("; ")
 		c = append(c, category)
 	}
-	_ = rows.Close()
 	tRows, err := s.DB.Queryx(builder.String())
 	if err != nil {
 		log.Printf("%v", err)
