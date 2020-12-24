@@ -9,13 +9,13 @@ import (
 )
 
 // 搜索标签并附带含有对应标签的文章ID
-func (s *DBServer) SelectTagsWithArticleID() (c []definition.CategoryWithTagsAndArticleID, err error) {
+func (s *DBServer) SelectTagsWithArticleID() (c definition.CategoryWithArticleIDListResult, err error) {
 	rows, err := s.DB.Queryx("SELECT * FROM category;")
 	if err != nil {
 		log.Printf("%v", err)
 	}
 	defer rows.Close()
-	c = make([]definition.CategoryWithTagsAndArticleID, 0)
+	c.List = make([]definition.CategoryWithTagsAndArticleID, 0)
 	category := definition.CategoryWithTagsAndArticleID{}
 	builder := strings.Builder{}
 	// 将查询到的分类存储下来，并且存储查询该分类下标签的SQL语句
@@ -23,15 +23,16 @@ func (s *DBServer) SelectTagsWithArticleID() (c []definition.CategoryWithTagsAnd
 		err := rows.StructScan(&category)
 		if err != nil {
 			log.Printf("%v", err)
-			c = append(c, definition.CategoryWithTagsAndArticleID{})
+			c.List = append(c.List, definition.CategoryWithTagsAndArticleID{})
 		}
-		builder.WriteString(`SELECT t.*, GROUP_CONCAT(atr.relation_article ORDER BY atr.relation_article) AS article_ids
+		builder.WriteString(`SELECT t.*, GROUP_CONCAT(atr.relation_article ORDER BY atr.relation_article) AS article_ids, COUNT(atr.relation_article) as tag_length
 FROM (SELECT * FROM tag where tag_category=`)
 		builder.WriteString(strconv.Itoa(int(category.ID)))
 		builder.WriteString(`) t 
 LEFT JOIN articles_tags_relation atr ON atr.relation_tag = t.tag_id 
-GROUP BY t.tag_id;`)
-		c = append(c, category)
+GROUP BY t.tag_id 
+ORDER BY tag_length DESC;`)
+		c.List = append(c.List, category)
 	}
 	tRows, err := s.DB.Queryx(builder.String())
 	if err != nil {
@@ -39,8 +40,8 @@ GROUP BY t.tag_id;`)
 		return c, nil
 	}
 	defer tRows.Close()
-	for i := range c {
-		if c[i].ID == 0 {
+	for i := range c.List {
+		if c.List[i].ID == 0 {
 			continue
 		}
 		tags := make([]definition.TagsWithArticleID, 0)
@@ -48,7 +49,8 @@ GROUP BY t.tag_id;`)
 		for tRows.Next() {
 			var str sql.NullString
 			articleIds := make([]int32, 0)
-			err := tRows.Scan(&tag.ID, &tag.CategoryID, &tag.Name, &str)
+			var temTagLength int32
+			err := tRows.Scan(&tag.ID, &tag.CategoryID, &tag.Name, &str, &temTagLength)
 			if err != nil {
 				log.Printf("%v", err)
 			}
@@ -72,7 +74,7 @@ GROUP BY t.tag_id;`)
 		if len(tags) == 0 {
 			tags = nil
 		}
-		c[i].Tags = tags
+		c.List[i].Tags = tags
 		ok := tRows.NextResultSet()
 		if !ok {
 			break

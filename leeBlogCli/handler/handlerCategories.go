@@ -13,6 +13,7 @@ func (api *API) GetTagsWithArticleID(writer *APIResponseWriter, r *http.Request)
 	}
 	defer r.Body.Close()
 
-	result.Data = api.Server.GetTagsWithArticleID()
+	list := api.Server.GetTagsWithArticleID()
+	result.Data = list
 	_, _ = writer.Send(result)
 }
