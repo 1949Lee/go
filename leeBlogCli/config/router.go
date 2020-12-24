@@ -47,6 +47,9 @@ var (
 	// 接口路由 获取文章列表
 	ArticleList = Site + "article-list"
 
+	// 接口路由 根据文章ID获取文章列表
+	GetArticleListByID = Site + "article-list-by-ids"
+
 	// 接口路由 展示文章
 	ShowArticle = Site + "show-article"
 

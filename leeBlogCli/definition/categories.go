@@ -25,3 +25,19 @@ type TagsWithArticleID struct {
 	//文章ID数组
 	ArticleIDs []int32 `json:"article_ids"`
 }
+
+// 文章列表接口的参数
+type ArticleListByIDParam struct {
+
+	// 页大小
+	PageSize int `json:"pageSize"`
+
+	// 页码 从1开始
+	PageIndex int `json:"pageIndex"`
+
+	// 文章id的逗号分割的串
+	ArticleIDs string `json:"articleIDs"`
+
+	// 类别ID
+	CategoryID int32 `json:"categoryID"`
+}

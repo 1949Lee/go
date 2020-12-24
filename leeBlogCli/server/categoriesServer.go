@@ -15,3 +15,8 @@ func (b *Blog) GetTagsWithArticleID() (c definition.CategoryWithArticleIDListRes
 		return c
 	}
 }
+
+// 根据文章ID获取文章列表
+func (b *Blog) GetArticleListByID(param *definition.ArticleListByIDParam) (c definition.ArticleListResult) {
+	return b.Dao.GetArticleListByID(param)
+}

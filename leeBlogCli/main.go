@@ -30,6 +30,7 @@ func main() {
 	http.HandleFunc(config.GetArticleWithEditingInfo, lee.API.APIInterceptor(lee.API.GetArticleWithEditingInfo, definition.InterceptorOptions{CheckLogin: false}))
 	http.HandleFunc(config.SaveArticle, lee.API.APIInterceptor(lee.API.SaveArticle, definition.InterceptorOptions{CheckLogin: true}))
 	http.HandleFunc(config.ArticleList, lee.API.APIInterceptor(lee.API.ArticleList, definition.InterceptorOptions{CheckLogin: false}))
+	http.HandleFunc(config.GetArticleListByID, lee.API.APIInterceptor(lee.API.GetArticleListByID, definition.InterceptorOptions{CheckLogin: false}))
 	http.HandleFunc(config.ShowArticle, lee.API.APIInterceptor(lee.API.ShowArticle, definition.InterceptorOptions{CheckLogin: false}))
 	http.HandleFunc(config.TagsGroupByCategory, lee.API.APIInterceptor(lee.API.GetTagsGroupByCategory, definition.InterceptorOptions{CheckLogin: false}))
 	http.HandleFunc(config.TagsWithArticleID, lee.API.APIInterceptor(lee.API.GetTagsWithArticleID, definition.InterceptorOptions{CheckLogin: false}))
