@@ -17,7 +17,12 @@ import (
 // 根据传入的文章id和文件名得到最终文件名
 func getFileName(articleID string, fileName string) string {
 	builder := strings.Builder{}
-	builder.WriteString(config.FilePath)
+	if config.ENV == "dev" {
+		builder.WriteString("article-file/")
+	} else {
+		builder.WriteString(utils.GetRootDir())
+		builder.WriteString(config.FilePath)
+	}
 	builder.WriteString(articleID)
 	builder.WriteString("/")
 	builder.WriteString(fileName)
