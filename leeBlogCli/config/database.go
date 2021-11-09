@@ -8,4 +8,6 @@ var (
 	//DBIP           = "39.106.17.117"
 	DBPort = "3306"
 	DBName = "blog"
+
+	RedisKeyImageTypeNeedConvert = "ImageTypeNeedConvert"
 )

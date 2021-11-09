@@ -53,6 +53,10 @@ var (
 	// 接口路由 展示文章
 	ShowArticle = Site + "show-article"
 
+	GetRedisValueByKey = Site + "get-redis-value"
+
+	InitRedis = Site + "init-redis"
+
 	// 静态资源路由
 	FileResource = Site + "static/"
 )

@@ -36,6 +36,8 @@ var (
 
 	// 首页文章列表接口的页大小的默认值
 	IndexArticleListPageSize int = 6
+
+	ImageTypeNeedConvert string = ".jpg,.jpeg,.png,.svg,.gif"
 )
 
 // 配置初始化

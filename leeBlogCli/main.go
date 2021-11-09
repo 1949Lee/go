@@ -36,6 +36,8 @@ func main() {
 	http.HandleFunc(config.DeleteTag, lee.API.APIInterceptor(lee.API.DeleteTag, definition.InterceptorOptions{CheckLogin: true}))
 	http.HandleFunc(config.NewCategory, lee.API.APIInterceptor(lee.API.NewCategory, definition.InterceptorOptions{CheckLogin: true}))
 	http.HandleFunc(config.DeleteCategory, lee.API.APIInterceptor(lee.API.DeleteCategory, definition.InterceptorOptions{CheckLogin: true}))
+	http.HandleFunc(config.GetRedisValueByKey, lee.API.APIInterceptor(lee.API.GetRedisValueByKey, definition.InterceptorOptions{CheckLogin: true}))
+	http.HandleFunc(config.InitRedis, lee.API.APIInterceptor(lee.API.InitRedis, definition.InterceptorOptions{CheckLogin: false}))
 	http.HandleFunc(config.FileResource, lee.API.ResourceInterceptor(lee.API.FileResource))
 	fmt.Printf("server start with http://%s:%s\n", config.Self_URL, config.ServerPort)
 	err := http.ListenAndServe(":"+config.ServerPort, nil)

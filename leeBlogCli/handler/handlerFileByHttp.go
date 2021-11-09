@@ -10,6 +10,8 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/exec"
+	"path"
 	"strconv"
 	"strings"
 )
@@ -104,11 +106,12 @@ func (api *API) ReceivingFile(writer *APIResponseWriter, r *http.Request) {
 				fileResItem.URL = ""
 			}
 			_ = file.Close()
-			// TODO 执行服务器命令来转换为渐进式图片，质量参数可变做成配置项：convert Electron+Vue3的架构.png  -interlace Plane Electron+Vue3的架构.png
-			//filePath := getFileName(param.ArticleID, v[i].Filename)
-			////fileExt := path.Ext(filePath)
-			//cmd := exec.Command("convert",filePath,"-interlace","Plane", filePath)
-			//_ = cmd.Start()
+			filePath := getFileName(param.ArticleID, v[i].Filename)
+			fileExt := path.Ext(filePath)
+			if strings.Contains(api.GetImageTypeNeedConvert(), fileExt) {
+				cmd := exec.Command("convert", filePath, "-interlace", "Plane", filePath)
+				_ = cmd.Start()
+			}
 			if fileResItem.URL != "" {
 				fileres = append(fileres, fileResItem)
 			}

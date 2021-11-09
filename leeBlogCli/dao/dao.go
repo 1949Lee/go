@@ -2,6 +2,7 @@ package dao
 
 import (
 	"fmt"
+	"github.com/go-redis/redis/v8"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
 	"leeBlogCli/config"
@@ -9,7 +10,8 @@ import (
 )
 
 type DBServer struct {
-	DB *sqlx.DB
+	DB    *sqlx.DB
+	Redis *redis.Client
 }
 
 // 打开数据库
@@ -18,6 +20,15 @@ func (s *DBServer) Open() {
 	// 如果数据库连接未关闭，则关闭。
 	if s.DB != nil {
 		_ = s.DB.Close()
+	}
+	if config.ENV != "dev" {
+		rdb := redis.NewClient(&redis.Options{
+			Addr:     "localhost:6379",
+			Password: "",
+			DB:       0,
+		})
+		s.Redis = rdb
+		s.InitRedis()
 	}
 
 	//连接数据库
