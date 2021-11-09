@@ -10,8 +10,6 @@ import (
 	_ "net/http/pprof"
 )
 
-var a = 1
-
 func main() {
 	env := flag.String("env", "dev", "leeBlogCli's running environment")
 	flag.Parse()
