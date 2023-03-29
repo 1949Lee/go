@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-// 跟句传入参数，获取文章信息
+// GetArticleHeader 跟句传入参数，获取文章信息
 func (s *DBServer) GetArticleHeader(param *definition.GetArticleParam) {
 
 }
@@ -20,7 +20,7 @@ func (s *DBServer) GetArticle(id int32) definition.Article {
 	return article
 }
 
-// 根据传入参数，添加文章
+// InsertArticle 根据传入参数，添加文章
 func (s *DBServer) InsertArticle(param *definition.SaveArticleInfo) bool {
 	var summary string
 	if len(param.Text) >= config.SummaryLength {
@@ -82,7 +82,8 @@ func (s *DBServer) InsertArticle(param *definition.SaveArticleInfo) bool {
 	}
 }
 
-// 根据传入参数，更新对应文章
+// UpdateArticle 根据传入参数，更新对应文章
+//goland:noinspection ALL
 func (s *DBServer) UpdateArticle(param *definition.SaveArticleInfo) bool {
 	var summary string
 	if len(param.Text) >= config.SummaryLength {
@@ -254,7 +255,8 @@ func (s *DBServer) UpdateArticle(param *definition.SaveArticleInfo) bool {
 //	return list
 //}
 
-// 模糊查询文章列表
+// GetArticleList 模糊查询文章列表
+//goland:noinspection ALL
 func (s *DBServer) GetArticleList(param *definition.ArticleListParam) definition.ArticleListResult {
 	sqlBuilder := strings.Builder{}
 	sqlBuilder.WriteString(`SELECT * FROM (SELECT (@rownum := @rownum + 1) as i ,a.* FROM (SELECT
@@ -365,7 +367,8 @@ ORDER BY
 	return list
 }
 
-// 根据文章ID查询文章类别及所有标签
+// GetArticleCategoryAndTags 根据文章ID查询文章类别及所有标签
+//goland:noinspection ALL
 func (s *DBServer) GetArticleCategoryAndTags(id int32) (definition.Category, []definition.Tag) {
 	tags := make([]definition.Tag, 0)
 	category := definition.Category{}
