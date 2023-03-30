@@ -41,7 +41,7 @@ func (api *API) HttpInterceptor(handler APIHandler, header map[string]string, op
 			}
 		}()
 		origin := r.Header.Get("Origin")
-		if !strings.HasSuffix(origin, config.LegalOriginURL) {
+		if config.ENV != "dev" && !strings.HasSuffix(origin, config.LegalOriginURL) {
 			writer.WriteHeader(403)
 			return
 		}
