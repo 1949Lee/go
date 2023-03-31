@@ -83,6 +83,7 @@ func (s *DBServer) InsertArticle(param *definition.SaveArticleInfo) bool {
 }
 
 // UpdateArticle 根据传入参数，更新对应文章
+//
 //goland:noinspection ALL
 func (s *DBServer) UpdateArticle(param *definition.SaveArticleInfo) bool {
 	var summary string
@@ -256,8 +257,17 @@ func (s *DBServer) UpdateArticle(param *definition.SaveArticleInfo) bool {
 //}
 
 // GetArticleList 模糊查询文章列表
+//
 //goland:noinspection ALL
 func (s *DBServer) GetArticleList(param *definition.ArticleListParam) definition.ArticleListResult {
+	countRows, err := s.DB.Queryx("SELECT count(*) FROM article;")
+	if err != nil {
+		log.Printf("%v", err)
+	}
+	defer countRows.Close()
+	countRows.Next()
+	sum := 0
+	countRows.Scan(&sum)
 	sqlBuilder := strings.Builder{}
 	sqlBuilder.WriteString(`SELECT * FROM (SELECT (@rownum := @rownum + 1) as i ,a.* FROM (SELECT
 	a.article_id,
@@ -364,10 +374,12 @@ ORDER BY
 		list.List = append(list.List, tem)
 
 	}
+	list.IsLastPage = param.PageIndex*param.PageSize >= sum
 	return list
 }
 
 // GetArticleCategoryAndTags 根据文章ID查询文章类别及所有标签
+//
 //goland:noinspection ALL
 func (s *DBServer) GetArticleCategoryAndTags(id int32) (definition.Category, []definition.Tag) {
 	tags := make([]definition.Tag, 0)
