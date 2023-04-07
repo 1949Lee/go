@@ -25,6 +25,19 @@ func (a *APIResponseWriter) Send(result interface{}) (int, error) {
 	return a.writer.Write(b)
 }
 
+func (a *APIResponseWriter) SendOtherStatus(result interface{}, statusCode int) (int, error) {
+	var (
+		b   []byte
+		err error
+	)
+	if b, err = json.Marshal(result); err != nil {
+		log.Printf("Send API result when json.Marshal Error:%v", err)
+	}
+	a.writer.WriteHeader(statusCode)
+
+	return a.writer.Write(b)
+}
+
 func (a *APIResponseWriter) Write(b []byte) (int, error) {
 	return a.writer.Write(b)
 }

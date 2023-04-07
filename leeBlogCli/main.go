@@ -39,6 +39,7 @@ func main() {
 	http.HandleFunc(config.GetRedisValueByKey, lee.API.APIInterceptor(lee.API.GetRedisValueByKey, definition.InterceptorOptions{CheckLogin: true}))
 	http.HandleFunc(config.InitRedis, lee.API.APIInterceptor(lee.API.InitRedis, definition.InterceptorOptions{CheckLogin: false}))
 	http.HandleFunc(config.FileResource, lee.API.ResourceInterceptor(lee.API.FileResource))
+	http.HandleFunc("/", lee.API.APIInterceptor(lee.API.NotFound, definition.InterceptorOptions{CheckLogin: false}))
 	fmt.Printf("server start with http://%s:%s\n", config.Self_URL, config.ServerPort)
 	err := http.ListenAndServe(":"+config.ServerPort, nil)
 	if err != nil {

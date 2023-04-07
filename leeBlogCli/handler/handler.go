@@ -2,6 +2,7 @@ package handler
 
 import (
 	"github.com/gorilla/websocket"
+	"leeBlogCli/definition"
 	"leeBlogCli/server"
 	"net/http"
 )
@@ -65,4 +66,14 @@ func (api *API) CheckLogin(r *http.Request) bool {
 		return false
 	}
 	return true
+}
+
+// 404
+func (api *API) NotFound(writer *APIResponseWriter, r *http.Request) {
+	result := definition.APIResult{
+		Code:    404,
+		Data:    "",
+		Message: "不合理请求",
+	}
+	_, _ = writer.SendOtherStatus(result, http.StatusNotFound)
 }
